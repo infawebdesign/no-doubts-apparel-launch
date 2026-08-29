@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import heroImg from "@/assets/hero-campaign.jpg";
 import editorialImg from "@/assets/editorial-lift.jpg";
-import { products } from "@/lib/products";
+import { formatPrice, products } from "@/lib/products";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Ticker } from "@/components/site/Ticker";
 
