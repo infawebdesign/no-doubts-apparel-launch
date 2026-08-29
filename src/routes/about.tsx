@@ -35,7 +35,7 @@ function About() {
         </h1>
       </header>
 
-      <div className="rainbow-rule h-1 w-full" />
+      <div className="hairline h-px w-full" />
 
       <section className="mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-6">
