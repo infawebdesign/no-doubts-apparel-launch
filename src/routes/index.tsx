@@ -89,9 +89,6 @@ function Home() {
         </div>
       </section>
 
-
-      <Ticker />
-
       <section className="mx-auto max-w-[1600px] px-4 py-16 sm:px-8">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-b border-border pb-4">
           <h2 className="display text-3xl sm:text-5xl">The Drop</h2>
