@@ -25,7 +25,7 @@ function Shop() {
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-12 sm:px-8 sm:py-16">
       <header className="border-b border-border pb-6">
-        <p className="label text-magenta">Collection 001</p>
+        <p className="label text-muted-foreground">Collection 001</p>
         <h1 className="display mt-3 text-5xl sm:text-8xl">Shop All</h1>
         <p className="label mt-4 text-muted-foreground">
           {products.length} products — pricing and inventory sync from Square

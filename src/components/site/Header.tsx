@@ -26,7 +26,7 @@ export function Header() {
             <Link
               key={item.to}
               to={item.to}
-              className="label text-muted-foreground transition-colors hover:text-lime"
+              className="label text-muted-foreground transition-colors hover:text-bone"
               activeProps={{ className: "label text-bone" }}
             >
               {item.label}

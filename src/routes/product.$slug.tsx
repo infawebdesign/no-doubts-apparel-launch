@@ -53,7 +53,7 @@ function ProductDetail({ product }: { product: Product }) {
   return (
     <div>
       <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8">
-        <Link to="/shop" className="label text-muted-foreground hover:text-lime">
+        <Link to="/shop" className="label text-muted-foreground hover:text-bone">
           &larr; Back to shop
         </Link>
       </div>
@@ -91,7 +91,7 @@ function ProductDetail({ product }: { product: Product }) {
                 onClick={() => setActiveImage(i)}
                 aria-label={`View image ${i + 1}`}
                 className={`aspect-square overflow-hidden border bg-muted ${
-                  i === activeImage ? "border-lime" : "border-border"
+                  i === activeImage ? "border-bone" : "border-border"
                 }`}
               >
                 {img.url ? (
@@ -133,7 +133,7 @@ function ProductDetail({ product }: { product: Product }) {
                   onClick={() => setSize(v.size)}
                   className={`min-w-14 border px-4 py-3 text-sm font-semibold transition-colors ${
                     size === v.size
-                      ? "border-lime bg-lime text-ink"
+                      ? "border-bone bg-bone text-ink"
                       : "border-border hover:border-bone"
                   }`}
                 >

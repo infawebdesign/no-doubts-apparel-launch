@@ -29,9 +29,9 @@ function About() {
   return (
     <div>
       <header className="mx-auto max-w-[1600px] px-4 py-12 sm:px-8 sm:py-20">
-        <p className="label text-lime">The brand</p>
+        <p className="label text-muted-foreground">The brand</p>
         <h1 className="display mt-4 text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
-          No <span className="text-cobalt">Doubts</span>
+          No <span className="text-muted-foreground">Doubts</span>
         </h1>
       </header>
 
@@ -56,9 +56,9 @@ function About() {
       <section className="border-y border-border">
         <div className="mx-auto grid max-w-[1600px] gap-px sm:grid-cols-3">
           {[
-            { title: "What we make", color: "text-lime" },
-            { title: "How we make it", color: "text-magenta" },
-            { title: "Where we're going", color: "text-cobalt" },
+            { title: "What we make", color: "text-muted-foreground" },
+            { title: "How we make it", color: "text-muted-foreground" },
+            { title: "Where we're going", color: "text-muted-foreground" },
           ].map((block) => (
             <div key={block.title} className="border-border p-8 sm:border-r">
               <h3 className={`display text-2xl ${block.color}`}>
@@ -86,7 +86,7 @@ function About() {
           <p className="text-sm text-muted-foreground">{PLACEHOLDER}</p>
           <Link
             to="/shop"
-            className="display w-fit bg-lime px-8 py-4 text-lg text-ink transition-colors hover:bg-magenta hover:text-bone"
+            className="display w-fit bg-bone px-8 py-4 text-lg text-ink transition-colors hover:bg-bone/85"
           >
             Shop the drop
           </Link>
