@@ -6,8 +6,8 @@
 
 /*
  * No Doubts Apparel design system.
- * Palette pulled from the brand's own screenprint artwork:
- * ink black, bone, acid lime, cobalt, magenta, tiger red.
+ * Dark gym-editorial: near-black canvas, bone type, hard edges,
+ * heavy athletic block display type, no decorative colour.
  */
 
 @theme inline {
@@ -38,18 +38,16 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-lime: var(--lime);
-  --color-cobalt: var(--cobalt);
-  --color-magenta: var(--magenta);
-  --color-tiger: var(--tiger);
   --color-bone: var(--bone);
   --color-ink: var(--ink);
+  --color-steel: var(--steel);
+  --color-smoke: var(--smoke);
 
-  --font-display: "Bungee", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Black", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Archivo", ui-monospace, monospace;
 
-  --animate-ticker: ticker 28s linear infinite;
+  --animate-ticker: ticker 32s linear infinite;
 
   @keyframes ticker {
     from {
@@ -63,32 +61,30 @@
 
 :root {
   --radius: 0px;
-  --ink: oklch(0.14 0.005 285);
-  --bone: oklch(0.96 0.012 90);
-  --lime: oklch(0.88 0.19 118);
-  --cobalt: oklch(0.62 0.18 265);
-  --magenta: oklch(0.65 0.24 350);
-  --tiger: oklch(0.68 0.2 25);
+  --ink: oklch(0.11 0 0);
+  --bone: oklch(0.95 0.004 90);
+  --steel: oklch(0.55 0.004 260);
+  --smoke: oklch(0.2 0.002 260);
 
   --background: var(--ink);
   --foreground: var(--bone);
-  --card: oklch(0.18 0.006 285);
+  --card: oklch(0.145 0.002 260);
   --card-foreground: var(--bone);
-  --popover: oklch(0.18 0.006 285);
+  --popover: oklch(0.145 0.002 260);
   --popover-foreground: var(--bone);
-  --primary: var(--lime);
-  --primary-foreground: oklch(0.14 0.005 285);
-  --secondary: var(--cobalt);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.24 0.006 285);
-  --muted-foreground: oklch(0.68 0.008 285);
-  --accent: var(--magenta);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.6 0.23 27);
+  --primary: var(--bone);
+  --primary-foreground: var(--ink);
+  --secondary: oklch(0.22 0.002 260);
+  --secondary-foreground: var(--bone);
+  --muted: oklch(0.18 0.002 260);
+  --muted-foreground: oklch(0.63 0.004 260);
+  --accent: oklch(0.22 0.002 260);
+  --accent-foreground: var(--bone);
+  --destructive: oklch(0.55 0.19 27);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(1 0 0 / 14%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: var(--lime);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: var(--bone);
 }
 
 @layer base {
@@ -104,7 +100,7 @@
   }
 
   ::selection {
-    background: var(--lime);
+    background: var(--bone);
     color: var(--ink);
   }
 }
@@ -112,24 +108,22 @@
 @utility display {
   font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
-  line-height: 0.92;
+  line-height: 0.88;
 }
 
 @utility label {
   font-size: 0.6875rem;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 600;
 }
 
-@utility rainbow-rule {
+@utility hairline {
   background: linear-gradient(
     to right,
-    var(--lime) 0 25%,
-    var(--cobalt) 25% 50%,
-    var(--magenta) 50% 75%,
-    var(--tiger) 75% 100%
+    color-mix(in oklab, var(--bone) 55%, transparent),
+    transparent
   );
 }
