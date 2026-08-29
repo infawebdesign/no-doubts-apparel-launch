@@ -63,7 +63,7 @@ export function Header() {
           ))}
         </nav>
       )}
-      <div className="rainbow-rule h-1 w-full" />
+      
     </header>
   );
 }

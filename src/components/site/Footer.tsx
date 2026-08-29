@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 export function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="rainbow-rule h-1 w-full" />
+      
       <div className="mx-auto grid max-w-[1600px] gap-10 px-4 py-14 sm:px-8 md:grid-cols-[minmax(0,1fr)_auto]">
         <div>
           <p className="display text-4xl sm:text-6xl">No&nbsp;Doubts Apparel</p>

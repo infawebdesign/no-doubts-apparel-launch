@@ -117,15 +117,15 @@ export const formatPrice = (priceCents: number | null) =>
     : `$${(priceCents / 100).toFixed(2)}`;
 
 export const accentClass: Record<Product["colorKey"], string> = {
-  lime: "bg-lime text-ink",
-  cobalt: "bg-cobalt text-bone",
-  magenta: "bg-magenta text-bone",
-  tiger: "bg-tiger text-ink",
+  lime: "bg-bone text-ink",
+  cobalt: "bg-bone text-ink",
+  magenta: "bg-bone text-ink",
+  tiger: "bg-bone text-ink",
 };
 
 export const accentText: Record<Product["colorKey"], string> = {
-  lime: "text-lime",
-  cobalt: "text-cobalt",
-  magenta: "text-magenta",
-  tiger: "text-tiger",
+  lime: "text-muted-foreground",
+  cobalt: "text-muted-foreground",
+  magenta: "text-muted-foreground",
+  tiger: "text-muted-foreground",
 };
