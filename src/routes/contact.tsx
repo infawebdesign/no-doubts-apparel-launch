@@ -24,7 +24,7 @@ function Contact() {
   const [sent, setSent] = useState(false);
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-12 sm:px-8 sm:py-20">
+    <div className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-20 sm:pt-36">
       <p className="label text-muted-foreground">Get in touch</p>
       <h1 className="display mt-4 text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
         Contact

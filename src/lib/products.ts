@@ -64,7 +64,7 @@ export const products: Product[] = [
     slug: "hit-the-standard",
     name: "Hit The Standard Tee",
     tagline: "Snake + dumbbell / back print",
-    priceCents: null,
+    priceCents: 5500,
     colorKey: "cobalt",
     status: "available",
     description:
