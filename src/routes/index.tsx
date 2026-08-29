@@ -3,7 +3,6 @@ import heroImg from "@/assets/hero-campaign.jpg";
 import editorialImg from "@/assets/editorial-lift.jpg";
 import { formatPrice, products } from "@/lib/products";
 import { ProductCard } from "@/components/site/ProductCard";
-import { Ticker } from "@/components/site/Ticker";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,7 +24,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const featured = products.find((p) => p.slug === "hit-the-standard");
+  const featured = products.find((p) => p.slug === "earn-your-stripes");
   return (
     <>
 
@@ -42,9 +41,9 @@ function Home() {
           <div className="relative mx-auto flex min-h-[100svh] max-w-[1700px] flex-col justify-end px-4 pt-28 pb-12 sm:px-8 sm:pb-16">
             <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
               <div>
-                <h1 className="display text-[16vw] leading-[0.85] sm:text-[11vw] lg:text-[9rem]">
-                  No&#8209;Doubts
-                </h1>
+<h1 className="display text-[11vw] leading-[0.85] sm:text-[8vw] lg:text-[6.5rem]">
+                   No&#8209;Doubts
+                 </h1>
                 <p className="display mt-6 text-lg text-bone sm:text-2xl">
                   Hit the standard.
                   <br />
