@@ -52,7 +52,7 @@ function ProductDetail({ product }: { product: Product }) {
 
   return (
     <div>
-      <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8">
+      <div className="mx-auto max-w-[1600px] px-4 py-8 pt-28 sm:px-8">
         <Link to="/shop" className="label text-muted-foreground hover:text-bone">
           &larr; Back to shop
         </Link>

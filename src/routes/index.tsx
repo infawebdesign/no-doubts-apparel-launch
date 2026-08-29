@@ -30,24 +30,27 @@ function Home() {
     <>
 
       <section className="relative">
-        <div className="relative min-h-[86svh] overflow-hidden">
+        <div className="relative min-h-[100svh] overflow-hidden">
           <img
             src={heroImg}
-            alt="No Doubts Apparel campaign"
+            alt="No Doubts Apparel campaign — Earn Your Stripes tee"
             width={1920}
-            height={1280}
+            height={1152}
             className="absolute inset-0 size-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/55 to-ink/25" />
-          <div className="relative mx-auto flex min-h-[86svh] max-w-[1600px] flex-col justify-end px-4 pb-12 sm:px-8 sm:pb-16">
-            <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-ink/40" />
+          <div className="relative mx-auto flex min-h-[100svh] max-w-[1700px] flex-col justify-end px-4 pt-28 pb-12 sm:px-8 sm:pb-16">
+            <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
               <div>
-                <p className="label text-bone/60">Drop 001 — MMXXVI</p>
-                <h1 className="display mt-5 text-[15vw] leading-[0.85] sm:text-[10vw] lg:text-[8.5rem]">
-                  No Doubts
+                <h1 className="display text-[16vw] leading-[0.85] sm:text-[11vw] lg:text-[9rem]">
+                  No&#8209;Doubts
                 </h1>
-                <p className="display mt-4 text-xl text-bone/85 sm:text-3xl">
+                <p className="display mt-6 text-lg text-bone sm:text-2xl">
                   Hit the standard.
+                  <br />
+                  Earn your total.
+                  <br />
+                  Leave no doubts.
                 </p>
                 <Link
                   to="/shop"
@@ -61,9 +64,9 @@ function Home() {
                 <Link
                   to="/product/$slug"
                   params={{ slug: featured.slug }}
-                  className="group hidden border border-bone/20 bg-ink/70 p-4 backdrop-blur lg:block"
+                  className="group hidden border border-bone/25 bg-ink/60 p-5 backdrop-blur-md lg:block"
                 >
-                  <div className="aspect-square overflow-hidden bg-card">
+                  <div className="aspect-[4/5] overflow-hidden bg-card">
                     {featured.images[0]?.url && (
                       <img
                         src={featured.images[0].url}
@@ -73,11 +76,13 @@ function Home() {
                       />
                     )}
                   </div>
-                  <p className="label mt-4 text-bone/50">New drop</p>
-                  <p className="mt-1 text-sm font-semibold">{featured.name}</p>
-                  <p className="label mt-3 inline-flex items-center gap-2">
-                    Shop now <span aria-hidden>&rarr;</span>
+                  <p className="display mt-5 text-xl">{featured.name}</p>
+                  <p className="mt-1 text-sm text-bone/70">
+                    {formatPrice(featured.priceCents)}
                   </p>
+                  <span className="label mt-4 flex items-center justify-between border border-bone px-5 py-3 transition-colors group-hover:bg-bone group-hover:text-ink">
+                    Shop now <span aria-hidden>&rarr;</span>
+                  </span>
                 </Link>
               )}
             </div>
