@@ -86,9 +86,12 @@ function Contact() {
         <aside className="space-y-8">
           <div className="border border-border p-6">
             <h2 className="display text-xl text-muted-foreground">Email</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              [Contact email to be provided]
-            </p>
+            <a
+              href="mailto:nodoubtsapparel.ca@gmail.com"
+              className="mt-3 inline-block text-sm text-bone transition-colors hover:text-bone/80"
+            >
+              nodoubtsapparel.ca@gmail.com
+            </a>
             <a
               href="https://www.instagram.com/nodoubts.apparel?utm_source=qr"
               target="_blank"
