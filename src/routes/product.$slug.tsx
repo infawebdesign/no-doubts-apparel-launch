@@ -113,10 +113,10 @@ function ProductDetail({ product }: { product: Product }) {
         <div className="lg:sticky lg:top-28 lg:h-fit">
           <h1 className="display text-4xl sm:text-6xl">{product.name}</h1>
           <p className="mt-4 text-xl font-semibold">
-            {formatPrice(product.priceCents)}
+            {formatPrice(product.priceCents)} CAD
           </p>
           <p className="label mt-1 text-muted-foreground">
-            One price across all sizes
+            All sizes same price + HST
           </p>
 
           <div className="mt-8">
