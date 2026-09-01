@@ -1,8 +1,8 @@
 const WORDS = [
-  "Earn Your Stripes",
+  "Earn Your Total",
   "Hit The Standard",
-  "Leave No Doubts",
-  "MMXXVI",
+  "Varsity",
+  "OG",
 ];
 
 export function Ticker() {
