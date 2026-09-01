@@ -1,5 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import ceoImg from "@/assets/nodoubts-ceo.jpg.asset.json";
+import ceoImg from "@/assets/team-NoDoubtCEO-Group-1-Full.asset.json";
+import tigerGroup from "@/assets/team-NoDoubtTigerBlood-Group-Full.asset.json";
+import snakeGroup1 from "@/assets/team-NoDoubtSnake-Group-1-Full.asset.json";
+import snakeGroup2 from "@/assets/team-NoDoubtSnake-Group-2-Full.asset.json";
+import varsityGroup from "@/assets/team-NoDoubtVarsity-Group-Full.asset.json";
+import renaissanceGroup from "@/assets/team-NoDoubtRenaissance-Group-Full.asset.json";
+import allStylesGroup from "@/assets/team-NoDoubtAllStyles-Group-Full.asset.json";
+import { ScrollMarquee } from "@/components/site/ScrollMarquee";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -25,8 +32,7 @@ function About() {
   return (
     <div>
       <header className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-20 sm:pt-36">
-        <p className="label text-muted-foreground">The brand</p>
-        <h1 className="display mt-4 text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
+        <h1 className="display text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
           No <span className="text-muted-foreground">Doubts</span>
         </h1>
       </header>
@@ -36,13 +42,9 @@ function About() {
       {/* Founders */}
       <section className="mx-auto grid max-w-[1600px] items-center gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <p className="label text-muted-foreground">The founders</p>
           <h2 className="display text-3xl sm:text-5xl">
             Sarah &amp; Francesco Catalano
           </h2>
-          <p className="label text-muted-foreground">
-            Creators of No Doubts Apparel
-          </p>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
             As powerlifters and meet directors, we've experienced this sport
             from both sides of the platform — as competitors chasing our own
@@ -110,6 +112,45 @@ function About() {
             proudly wear on the platform, at the gym, or out in the world.
           </p>
         </div>
+      </section>
+
+      {/* Meet the team — scroll-driven marquee */}
+      <section>
+        <div className="mx-auto max-w-[1600px] px-4 pb-10 sm:px-8">
+          <h2 className="display text-3xl sm:text-5xl">Meet the team</h2>
+        </div>
+        <ScrollMarquee
+          images={[
+            {
+              url: ceoImg.url,
+              alt: "Sarah and Francesco Catalano in No Doubts tees",
+            },
+            {
+              url: tigerGroup.url,
+              alt: "The team wearing the On The Prowl tiger tee",
+            },
+            {
+              url: varsityGroup.url,
+              alt: "The team wearing the Varsity tee",
+            },
+            {
+              url: snakeGroup1.url,
+              alt: "The team wearing the Strike snake tee",
+            },
+            {
+              url: renaissanceGroup.url,
+              alt: "No Doubts team group photo",
+            },
+            {
+              url: snakeGroup2.url,
+              alt: "The team in Strike tees at a meet",
+            },
+            {
+              url: allStylesGroup.url,
+              alt: "The full No Doubts collection worn by the team",
+            },
+          ]}
+        />
       </section>
 
       {/* Mindset statement */}
