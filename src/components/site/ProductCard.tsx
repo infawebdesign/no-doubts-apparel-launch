@@ -41,9 +41,6 @@ export function ProductCard({ product }: { product: Product }) {
           <h3 className="display truncate text-base sm:text-lg">
             {product.name}
           </h3>
-          <p className="label mt-1 truncate text-muted-foreground">
-            {product.tagline}
-          </p>
         </div>
         <span className="shrink-0 text-sm font-semibold">
           {formatPrice(product.priceCents)}
