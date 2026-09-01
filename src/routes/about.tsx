@@ -130,10 +130,10 @@ function About() {
         </div>
       </section>
 
-      {/* Meet the team — scroll-driven marquee */}
-      <section>
-        <div className="mx-auto max-w-[1600px] px-4 pb-10 sm:px-8">
-          <h2 className="display text-3xl sm:text-5xl">Meet the team</h2>
+      {/* Photo gallery — scroll-driven marquee */}
+      <section className="pt-10">
+        <div className="mx-auto max-w-[1600px] px-4 pb-10 pt-6 sm:px-8">
+          <h2 className="display text-3xl sm:text-5xl">Photo gallery</h2>
         </div>
         <ScrollMarquee
           images={[
