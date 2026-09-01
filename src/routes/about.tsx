@@ -47,7 +47,7 @@ function About() {
           </h2>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
             As powerlifters and meet directors, we've experienced this sport
-            from both sides of the platform — as competitors chasing our own
+            from both sides of the platform: as competitors chasing our own
             PRs, and as the people behind the scenes making sure others get
             their shot at theirs. We're based in Guelph, Ontario, raising two
             young boys, and running Catalano Events, an events company hosting
@@ -60,7 +60,7 @@ function About() {
         </div>
         <img
           src={ceoImg.url}
-          alt="Sarah and Francesco Catalano — creators of No Doubts Apparel"
+          alt="Sarah and Francesco Catalano - creators of No Doubts Apparel"
           loading="lazy"
           width={1143}
           height={1600}
@@ -68,49 +68,65 @@ function About() {
         />
       </section>
 
-      {/* Credentials */}
+      {/* Credentials + Why No Doubts exists */}
       <section className="border-y border-border">
-        <div className="mx-auto grid max-w-[1600px] gap-px sm:grid-cols-3">
-          {[
-            {
-              title: "10+ years",
-              text: "Competing on the platform and directing the meets where other lifters chase theirs.",
-            },
-            {
-              title: "Both sides of the platform",
-              text: "Competitors chasing PRs — and meet directors making sure others get their shot.",
-            },
-            {
-              title: "Guelph, Ontario",
-              text: "Home of No Doubts Apparel and Catalano Events, hosting premier powerlifting meets.",
-            },
-          ].map((block) => (
-            <div key={block.title} className="border-border p-8 sm:border-r">
-              <h3 className="display text-2xl">{block.title}</h3>
-              <p className="mt-4 text-sm text-muted-foreground">{block.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+        <div className="mx-auto grid max-w-[1600px] gap-px lg:grid-cols-2">
+          {/* Left: interactive credential cards */}
+          <div className="grid gap-px divide-y divide-border border-border lg:divide-y-0 lg:divide-x lg:border-r">
+            {[
+              {
+                title: "10+ years",
+                text: "Competing on the platform and directing the meets where other lifters chase theirs.",
+              },
+              {
+                title: "Both sides of the platform",
+                text: "Competitors chasing PRs, and meet directors making sure others get their shot.",
+              },
+              {
+                title: "Guelph, Ontario",
+                text: "Home of No Doubts Apparel and Catalano Events, hosting premier powerlifting meets.",
+              },
+            ].map((block, i, arr) => (
+              <div
+                key={block.title}
+                className={`group relative bg-background p-8 transition-colors duration-300 hover:bg-muted ${
+                  i < arr.length - 1 ? "lg:border-b lg:border-border" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="display text-2xl transition-colors duration-300 group-hover:text-bone">
+                    {block.title}
+                  </h3>
+                  <span className="display text-2xl text-muted-foreground transition-all duration-300 group-hover:translate-x-1 group-hover:text-bone">
+                    →
+                  </span>
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground transition-colors duration-300 group-hover:text-foreground">
+                  {block.text}
+                </p>
+                <span className="absolute bottom-0 left-0 h-px w-0 bg-bone transition-all duration-500 group-hover:w-full" />
+              </div>
+            ))}
+          </div>
 
-      {/* Why No Doubts exists */}
-      <section className="mx-auto max-w-[1600px] px-4 py-16 sm:px-8">
-        <div className="max-w-prose space-y-6">
-          <h2 className="display text-3xl sm:text-5xl">Why No Doubts exists</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            We created No Doubts Apparel to represent the confidence that comes
-            from putting in the work, trusting your preparation, and knowing
-            you're capable of more than you think. We've seen what that belief
-            does under a heavy bar, and we've seen it carry into careers,
-            relationships, and everyday life — for us and for the lifters we've
-            cheered for on our platform. That's why we started an apparel
-            company built around it.
-          </p>
-          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            We wanted to create gear that looks and feels as strong and bold as
-            the work you put in. Each design represents something you can
-            proudly wear on the platform, at the gym, or out in the world.
-          </p>
+          {/* Right: Why No Doubts exists */}
+          <div className="space-y-6 p-8 sm:p-12 lg:p-16">
+            <h2 className="display text-3xl sm:text-5xl">Why No Doubts exists</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              We created No Doubts Apparel to represent the confidence that comes
+              from putting in the work, trusting your preparation, and knowing
+              you're capable of more than you think. We've seen what that belief
+              does under a heavy bar, and we've seen it carry into careers,
+              relationships, and everyday life: for us and for the lifters we've
+              cheered for on our platform. That's why we started an apparel
+              company built around it.
+            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              We wanted to create gear that looks and feels as strong and bold as
+              the work you put in. Each design represents something you can
+              proudly wear on the platform, at the gym, or out in the world.
+            </p>
+          </div>
         </div>
       </section>
 
