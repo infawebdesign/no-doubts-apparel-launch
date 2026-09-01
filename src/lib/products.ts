@@ -1,7 +1,7 @@
-import tigerTee from "@/assets/tiger-tee.png.asset.json";
-import snakeTee from "@/assets/snake-tee.png.asset.json";
-import scriptTee from "@/assets/script-tee.png.asset.json";
-import ogTee from "@/assets/og-tee.png.asset.json";
+import tigerTee from "@/assets/tiger-tee.png";
+import snakeTee from "@/assets/snake-tee.png";
+import scriptTee from "@/assets/script-tee.png";
+import ogTee from "@/assets/og-tee.png";
 
 /**
  * Product shape mirrors what a Square Catalog item will provide.
@@ -57,7 +57,7 @@ export const products: Product[] = [
     description:
       "Striking tiger design, reminding you to have no doubts and earn the total you worked for.",
     images: [
-      { url: tigerTee.url, alt: "On The Prowl Tee — Earn Your Total, front print" },
+      { url: tigerTee, alt: "On The Prowl Tee — Earn Your Total, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -93,7 +93,7 @@ export const products: Product[] = [
     description:
       "Ode to a classic jersey look, \"Leave No Doubts\" with secondary ND logo on sleeve. Simple and sharp!",
     images: [
-      { url: scriptTee.url, alt: "Varsity Tee, front print" },
+      { url: scriptTee, alt: "Varsity Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -111,7 +111,7 @@ export const products: Product[] = [
     description:
       "Our primary logo in a clean front print for those proud to rep the brand's mindset!",
     images: [
-      { url: ogTee.url, alt: "OG No Doubts Basic Tee, front print" },
+      { url: ogTee, alt: "OG No Doubts Basic Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],

@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import ceoImg from "@/assets/team-NoDoubtCEO-Group-1-Full.asset.json";
-import tigerGroup from "@/assets/team-NoDoubtTigerBlood-Group-Full.asset.json";
-import snakeGroup1 from "@/assets/team-NoDoubtSnake-Group-1-Full.asset.json";
-import snakeGroup2 from "@/assets/team-NoDoubtSnake-Group-2-Full.asset.json";
-import varsityGroup from "@/assets/team-NoDoubtVarsity-Group-Full.asset.json";
-import renaissanceGroup from "@/assets/team-NoDoubtRenaissance-Group-Full.asset.json";
-import allStylesGroup from "@/assets/team-NoDoubtAllStyles-Group-Full.asset.json";
+import ceoImg from "@/assets/team-NoDoubtCEO-Group-1-Full.jpg";
+import tigerGroup from "@/assets/team-NoDoubtTigerBlood-Group-Full.jpg";
+import snakeGroup1 from "@/assets/team-NoDoubtSnake-Group-1-Full.jpg";
+import snakeGroup2 from "@/assets/team-NoDoubtSnake-Group-2-Full.jpg";
+import varsityGroup from "@/assets/team-NoDoubtVarsity-Group-Full.jpg";
+import renaissanceGroup from "@/assets/team-NoDoubtRenaissance-Group-Full.jpg";
+import allStylesGroup from "@/assets/team-NoDoubtAllStyles-Group-Full.jpg";
 import { ScrollMarquee } from "@/components/site/ScrollMarquee";
 
 export const Route = createFileRoute("/about")({
@@ -62,7 +62,7 @@ function About() {
           </p>
         </div>
         <img
-          src={ceoImg.url}
+          src={ceoImg}
           alt="Sarah and Francesco Catalano - creators of No Doubts Apparel"
           loading="lazy"
           width={1143}
@@ -141,31 +141,31 @@ function About() {
         <ScrollMarquee
           images={[
             {
-              url: ceoImg.url,
+              url: ceoImg,
               alt: "Sarah and Francesco Catalano in No Doubts tees",
             },
             {
-              url: tigerGroup.url,
+              url: tigerGroup,
               alt: "The team wearing the On The Prowl tiger tee",
             },
             {
-              url: varsityGroup.url,
+              url: varsityGroup,
               alt: "The team wearing the Varsity tee",
             },
             {
-              url: snakeGroup1.url,
+              url: snakeGroup1,
               alt: "The team wearing the Strike snake tee",
             },
             {
-              url: renaissanceGroup.url,
+              url: renaissanceGroup,
               alt: "No Doubts team group photo",
             },
             {
-              url: snakeGroup2.url,
+              url: snakeGroup2,
               alt: "The team in Strike tees at a meet",
             },
             {
-              url: allStylesGroup.url,
+              url: allStylesGroup,
               alt: "The full No Doubts collection worn by the team",
             },
           ]}
