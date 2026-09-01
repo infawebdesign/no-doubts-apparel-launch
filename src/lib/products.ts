@@ -29,6 +29,8 @@ export type Product = {
   tagline: string;
   /** Price in cents. Square is the source of truth once connected. */
   priceCents: number | null;
+  /** Total units available. Square inventory count maps here later. */
+  stock: number | null;
   colorKey: "lime" | "cobalt" | "magenta" | "tiger";
   status: "available" | "coming-soon";
   /** Placeholder copy until final descriptions are supplied. */
