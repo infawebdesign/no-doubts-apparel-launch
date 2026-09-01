@@ -90,7 +90,7 @@ function Home() {
       </section>
 
       <section className="mx-auto max-w-[1600px] px-4 py-16 sm:px-8">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-b border-border pb-4">
+        <div className="flex flex-col items-start gap-4 border-b border-border pb-4 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <h2 className="display text-3xl sm:text-5xl">Featured Collection</h2>
           <Link
             to="/shop"
