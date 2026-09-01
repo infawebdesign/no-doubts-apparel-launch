@@ -111,7 +111,7 @@ export const products: Product[] = [
     description:
       "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
     images: [
-      { url: wordmarkTee.url, alt: "OG tee, front print" },
+      { url: ogTee.url, alt: "OG tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
