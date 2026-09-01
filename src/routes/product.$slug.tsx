@@ -116,7 +116,7 @@ function ProductDetail({ product }: { product: Product }) {
             {formatPrice(product.priceCents)}
           </p>
           <p className="label mt-1 text-muted-foreground">
-            Pricing synced from Square
+            One price across all sizes
           </p>
 
           <div className="mt-8">
@@ -138,7 +138,9 @@ function ProductDetail({ product }: { product: Product }) {
               ))}
             </div>
             <p className="label mt-3 text-muted-foreground">
-              Availability syncs from Square inventory
+              {product.stock === null
+                ? "Availability syncs from Square inventory"
+                : `${product.stock} available`}
             </p>
           </div>
 
