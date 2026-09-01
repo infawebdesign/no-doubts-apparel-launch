@@ -25,8 +25,7 @@ function Contact() {
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-20 sm:pt-36">
-      <p className="label text-muted-foreground">Get in touch</p>
-      <h1 className="display mt-4 text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
+      <h1 className="display text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
         Contact
       </h1>
 
@@ -80,9 +79,7 @@ function Contact() {
             Send message
           </button>
           <p className="text-xs text-muted-foreground">
-            {sent
-              ? "[Placeholder — form delivery is not connected yet.]"
-              : "[Placeholder — message delivery to be connected once the brand inbox is confirmed.]"}
+            {sent && "Thanks — we'll be in touch once the brand inbox is live."}
           </p>
         </form>
 
@@ -92,12 +89,28 @@ function Contact() {
             <p className="mt-3 text-sm text-muted-foreground">
               [Contact email to be provided]
             </p>
-          </div>
-          <div className="border border-border p-6">
-            <h2 className="display text-xl text-muted-foreground">Social</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              [Social handles to be provided]
-            </p>
+            <a
+              href="https://www.instagram.com/nodoubts.apparel?utm_source=qr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 text-sm text-bone transition-colors hover:text-bone/80"
+              aria-label="No Doubts Apparel on Instagram"
+            >
+              <svg
+                className="size-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+              </svg>
+              @nodoubts.apparel
+            </a>
           </div>
           <div className="border border-border p-6">
             <h2 className="display text-xl text-muted-foreground">Orders</h2>
