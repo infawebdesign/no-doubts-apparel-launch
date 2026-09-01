@@ -1,5 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import ceoImg from "@/assets/nodoubts-ceo.jpg.asset.json";
+import ceoImg from "@/assets/team-NoDoubtCEO-Group-1-Full.asset.json";
+import tigerGroup from "@/assets/team-NoDoubtTigerBlood-Group-Full.asset.json";
+import snakeGroup1 from "@/assets/team-NoDoubtSnake-Group-1-Full.asset.json";
+import snakeGroup2 from "@/assets/team-NoDoubtSnake-Group-2-Full.asset.json";
+import varsityGroup from "@/assets/team-NoDoubtVarsity-Group-Full.asset.json";
+import renaissanceGroup from "@/assets/team-NoDoubtRenaissance-Group-Full.asset.json";
+import allStylesGroup from "@/assets/team-NoDoubtAllStyles-Group-Full.asset.json";
+import { ScrollMarquee } from "@/components/site/ScrollMarquee";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -36,13 +43,9 @@ function About() {
       {/* Founders */}
       <section className="mx-auto grid max-w-[1600px] items-center gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <p className="label text-muted-foreground">The founders</p>
           <h2 className="display text-3xl sm:text-5xl">
             Sarah &amp; Francesco Catalano
           </h2>
-          <p className="label text-muted-foreground">
-            Creators of No Doubts Apparel
-          </p>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
             As powerlifters and meet directors, we've experienced this sport
             from both sides of the platform — as competitors chasing our own
