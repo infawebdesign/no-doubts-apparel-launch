@@ -114,6 +114,45 @@ function About() {
         </div>
       </section>
 
+      {/* Meet the team — scroll-driven marquee */}
+      <section>
+        <div className="mx-auto max-w-[1600px] px-4 pb-10 sm:px-8">
+          <h2 className="display text-3xl sm:text-5xl">Meet the team</h2>
+        </div>
+        <ScrollMarquee
+          images={[
+            {
+              url: ceoImg.url,
+              alt: "Sarah and Francesco Catalano in No Doubts tees",
+            },
+            {
+              url: tigerGroup.url,
+              alt: "The team wearing the On The Prowl tiger tee",
+            },
+            {
+              url: varsityGroup.url,
+              alt: "The team wearing the Varsity tee",
+            },
+            {
+              url: snakeGroup1.url,
+              alt: "The team wearing the Strike snake tee",
+            },
+            {
+              url: renaissanceGroup.url,
+              alt: "No Doubts team group photo",
+            },
+            {
+              url: snakeGroup2.url,
+              alt: "The team in Strike tees at a meet",
+            },
+            {
+              url: allStylesGroup.url,
+              alt: "The full No Doubts collection worn by the team",
+            },
+          ]}
+        />
+      </section>
+
       {/* Mindset statement */}
       <section className="border-y border-border">
         <div className="mx-auto max-w-[1600px] px-4 py-20 sm:px-8 sm:py-28">
