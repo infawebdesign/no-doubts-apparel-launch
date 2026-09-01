@@ -15,6 +15,8 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as ApiSquareProductsRouteImport } from './routes/api/square/products'
+import { Route as ApiSquareOauthCallbackRouteImport } from './routes/api/square/oauth/callback'
+import { Route as ApiSquareOauthStartRouteImport } from './routes/api/square/oauth/start'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +48,16 @@ const ApiSquareProductsRoute = ApiSquareProductsRouteImport.update({
   path: '/api/square/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSquareOauthCallbackRoute = ApiSquareOauthCallbackRouteImport.update({
+  id: '/api/square/oauth/callback',
+  path: '/api/square/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSquareOauthStartRoute = ApiSquareOauthStartRouteImport.update({
+  id: '/api/square/oauth/start',
+  path: '/api/square/oauth/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +66,8 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/products': typeof ApiSquareProductsRoute
+  '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
+  '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +76,8 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/products': typeof ApiSquareProductsRoute
+  '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
+  '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +87,8 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/products': typeof ApiSquareProductsRoute
+  '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
+  '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +99,8 @@ export interface FileRouteTypes {
     | '/shop'
     | '/product/$slug'
     | '/api/square/products'
+    | '/api/square/oauth/callback'
+    | '/api/square/oauth/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +109,8 @@ export interface FileRouteTypes {
     | '/shop'
     | '/product/$slug'
     | '/api/square/products'
+    | '/api/square/oauth/callback'
+    | '/api/square/oauth/start'
   id:
     | '__root__'
     | '/'
@@ -97,6 +119,8 @@ export interface FileRouteTypes {
     | '/shop'
     | '/product/$slug'
     | '/api/square/products'
+    | '/api/square/oauth/callback'
+    | '/api/square/oauth/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +130,8 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   ProductSlugRoute: typeof ProductSlugRoute
   ApiSquareProductsRoute: typeof ApiSquareProductsRoute
+  ApiSquareOauthCallbackRoute: typeof ApiSquareOauthCallbackRoute
+  ApiSquareOauthStartRoute: typeof ApiSquareOauthStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +178,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSquareProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/square/oauth/callback': {
+      id: '/api/square/oauth/callback'
+      path: '/api/square/oauth/callback'
+      fullPath: '/api/square/oauth/callback'
+      preLoaderRoute: typeof ApiSquareOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/square/oauth/start': {
+      id: '/api/square/oauth/start'
+      path: '/api/square/oauth/start'
+      fullPath: '/api/square/oauth/start'
+      preLoaderRoute: typeof ApiSquareOauthStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +202,8 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   ProductSlugRoute: ProductSlugRoute,
   ApiSquareProductsRoute: ApiSquareProductsRoute,
+  ApiSquareOauthCallbackRoute: ApiSquareOauthCallbackRoute,
+  ApiSquareOauthStartRoute: ApiSquareOauthStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
