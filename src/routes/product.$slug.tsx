@@ -137,11 +137,6 @@ function ProductDetail({ product }: { product: Product }) {
                 </button>
               ))}
             </div>
-            <p className="label mt-3 text-muted-foreground">
-              {product.stock === null
-                ? "Availability syncs from Square inventory"
-                : `${product.stock} available`}
-            </p>
           </div>
 
           <button
@@ -149,12 +144,8 @@ function ProductDetail({ product }: { product: Product }) {
             disabled
             className="display mt-8 w-full cursor-not-allowed bg-bone px-8 py-5 text-xl text-ink opacity-60"
           >
-            Checkout with Square
+            Checkout
           </button>
-          <p className="mt-3 text-xs text-muted-foreground">
-            [Square checkout not connected yet — this button will hand off to
-            Square's secure checkout.]
-          </p>
 
           <div className="mt-10 space-y-4 border-t border-border pt-6">
             <div>
