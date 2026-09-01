@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Menu, X, User, ShoppingBag } from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react";
 
 const nav = [
   { to: "/shop", label: "Shop" },
@@ -32,9 +32,6 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-5">
-          <button type="button" aria-label="Account" className="text-bone/80 transition-colors hover:text-bone">
-            <User className="size-5" />
-          </button>
           <button type="button" aria-label="Bag (0)" className="relative text-bone/80 transition-colors hover:text-bone">
             <ShoppingBag className="size-5" />
             <span className="label absolute -top-1 -right-2 text-[9px] tracking-normal">0</span>
