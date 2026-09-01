@@ -62,7 +62,7 @@ function About() {
           loading="lazy"
           width={1143}
           height={1600}
-          className="aspect-[4/5] w-full object-cover"
+          className="aspect-[4/5] w-full object-cover object-top"
         />
       </section>
 
