@@ -118,11 +118,16 @@ function Home() {
           />
           <div className="flex flex-col justify-center gap-6 px-4 py-16 sm:px-12">
             <h2 className="display text-4xl sm:text-6xl">
-              Built in the <span className="text-muted-foreground">gym</span>, worn in
-              the <span className="text-muted-foreground">street</span>
+              Built by{" "}
+              <span className="text-muted-foreground">powerlifters</span>, worn
+              with <span className="text-muted-foreground">purpose</span>
             </h2>
-            <p className="max-w-prose text-sm text-muted-foreground">
-              [Placeholder campaign copy — final brand messaging to be supplied.]
+            <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
+              No Doubts Apparel was founded by Sarah and Francesco Catalano —
+              powerlifters and meet directors from Guelph, Ontario with over a
+              decade in the sport. Every design is built around the confidence
+              that comes from putting in the work and trusting your
+              preparation — on the platform, in the gym, and out in the world.
             </p>
             <Link
               to="/about"
