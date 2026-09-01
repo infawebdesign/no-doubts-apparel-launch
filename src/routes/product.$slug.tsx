@@ -166,7 +166,8 @@ function ProductDetail({ product }: { product: Product }) {
             <div>
               <h2 className="label text-bone">Details</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                [Materials, fit and care details to be supplied.]
+                60/40 blend. Unisex sizing from XS–2XL. Price is the same across
+                all sizes.
               </p>
             </div>
             <div>
