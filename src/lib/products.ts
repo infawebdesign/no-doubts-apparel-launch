@@ -1,6 +1,7 @@
 import tigerTee from "@/assets/tiger-tee.png.asset.json";
 import snakeTee from "@/assets/snake-tee.png.asset.json";
 import scriptTee from "@/assets/script-tee.png.asset.json";
+import wordmarkTee from "@/assets/nodoubts-wordmark-tee.png.asset.json";
 
 /**
  * Product shape mirrors what a Square Catalog item will provide.
@@ -94,17 +95,21 @@ export const products: Product[] = [
     variations: sizeVariations("nd-script"),
   },
   {
-    id: "nd-four",
-    slug: "product-four",
-    name: "Product Four",
-    tagline: "Artwork to be announced",
+    id: "nd-wordmark",
+    slug: "nodoubts-wordmark",
+    name: "No-Doubts Wordmark Tee",
+    tagline: "Wordmark / front print",
     priceCents: null,
     colorKey: "magenta",
-    status: "coming-soon",
+    status: "available",
     description:
-      "[Placeholder — product name, artwork and copy to be supplied.]",
-    images: [{ url: null, alt: "Product image placeholder" }],
-    variations: sizeVariations("nd-four"),
+      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+    images: [
+      { url: wordmarkTee.url, alt: "No-Doubts wordmark tee, front print" },
+      { url: null, alt: "Additional photography coming soon" },
+      { url: null, alt: "Additional photography coming soon" },
+    ],
+    variations: sizeVariations("nd-wordmark"),
   },
 ];
 
