@@ -30,10 +30,10 @@ type D1Statement = {
 export type D1Database = { prepare: (query: string) => D1Statement };
 
 export type SquareEnv = {
-  SQUARE_APP_ID?: string;
-  SQUARE_APP_SECRET?: string;
-  SQUARE_TOKEN_ENCRYPTION_KEY?: string;
-  SQUARE_DB?: D1Database;
+  SQUARE_APP_ID: string | undefined;
+  SQUARE_APP_SECRET: string | undefined;
+  SQUARE_TOKEN_ENCRYPTION_KEY: string | undefined;
+  SQUARE_DB: D1Database | undefined;
 };
 
 /**
@@ -44,13 +44,15 @@ export type SquareEnv = {
 export async function getSquareEnv(): Promise<SquareEnv> {
   let workerEnv: Record<string, unknown> = {};
   try {
-    const mod = (await import(
-      /* @vite-ignore */ "cloudflare:workers"
-    )) as { env?: Record<string, unknown> };
+    const specifier = "cloudflare:workers";
+    const mod = (await import(/* @vite-ignore */ specifier)) as {
+      env?: Record<string, unknown>;
+    };
     workerEnv = mod.env ?? {};
   } catch {
     workerEnv = {};
   }
+
 
   const pick = (name: string): string | undefined => {
     const fromWorker = workerEnv[name];
