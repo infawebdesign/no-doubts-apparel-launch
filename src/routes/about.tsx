@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import editorialImg from "@/assets/editorial-lift.jpg";
-import heroImg from "@/assets/hero-campaign.jpg";
+import ceoImg from "@/assets/nodoubts-ceo.jpg.asset.json";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -9,21 +8,18 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "About No Doubts Apparel: a new streetwear label shaped by gym culture and heavy graphic design.",
+          "No Doubts Apparel was created by Sarah and Francesco Catalano — powerlifters and meet directors from Guelph, Ontario. No Doubts isn't just a name. It's a mindset.",
       },
       { property: "og:title", content: "About — No Doubts Apparel" },
       {
         property: "og:description",
         content:
-          "A new streetwear label shaped by gym culture and heavy graphic design.",
+          "Founded by powerlifters Sarah and Francesco Catalano. No Doubts isn't just a name. It's a mindset.",
       },
     ],
   }),
   component: About,
 });
-
-const PLACEHOLDER =
-  "[Placeholder copy — final brand text to be supplied by No Doubts Apparel.]";
 
 function About() {
   return (
@@ -37,58 +33,101 @@ function About() {
 
       <div className="hairline h-px w-full" />
 
-      <section className="mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* Founders */}
+      <section className="mx-auto grid max-w-[1600px] items-center gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <h2 className="display text-3xl sm:text-5xl">Our story</h2>
-          <p className="text-sm text-muted-foreground">{PLACEHOLDER}</p>
-          <p className="text-sm text-muted-foreground">{PLACEHOLDER}</p>
+          <p className="label text-muted-foreground">The founders</p>
+          <h2 className="display text-3xl sm:text-5xl">
+            Sarah &amp; Francesco Catalano
+          </h2>
+          <p className="label text-muted-foreground">
+            Creators of No Doubts Apparel
+          </p>
+          <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
+            As powerlifters and meet directors, we've experienced this sport
+            from both sides of the platform — as competitors chasing our own
+            PRs, and as the people behind the scenes making sure others get
+            their shot at theirs. We're based in Guelph, Ontario, raising two
+            young boys, and running Catalano Events, an events company hosting
+            premier powerlifting meets.
+          </p>
+          <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
+            We've been involved in this sport for 10+ years; it's how we met
+            each other, and it's shaped nearly every part of our lives since.
+          </p>
         </div>
         <img
-          src={heroImg}
-          alt="No Doubts Apparel campaign"
+          src={ceoImg.url}
+          alt="Sarah and Francesco Catalano — creators of No Doubts Apparel"
           loading="lazy"
-          width={1920}
-          height={1088}
-          className="aspect-[4/3] w-full object-cover"
+          width={1143}
+          height={1600}
+          className="aspect-[4/5] w-full object-cover"
         />
       </section>
 
+      {/* Credentials */}
       <section className="border-y border-border">
         <div className="mx-auto grid max-w-[1600px] gap-px sm:grid-cols-3">
           {[
-            { title: "What we make", color: "text-muted-foreground" },
-            { title: "How we make it", color: "text-muted-foreground" },
-            { title: "Where we're going", color: "text-muted-foreground" },
+            {
+              title: "10+ years",
+              text: "Competing on the platform and directing the meets where other lifters chase theirs.",
+            },
+            {
+              title: "Both sides of the platform",
+              text: "Competitors chasing PRs — and meet directors making sure others get their shot.",
+            },
+            {
+              title: "Guelph, Ontario",
+              text: "Home of No Doubts Apparel and Catalano Events, hosting premier powerlifting meets.",
+            },
           ].map((block) => (
             <div key={block.title} className="border-border p-8 sm:border-r">
-              <h3 className={`display text-2xl ${block.color}`}>
-                {block.title}
-              </h3>
-              <p className="mt-4 text-sm text-muted-foreground">
-                {PLACEHOLDER}
-              </p>
+              <h3 className="display text-2xl">{block.title}</h3>
+              <p className="mt-4 text-sm text-muted-foreground">{block.text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <img
-          src={editorialImg}
-          alt="Chalked hands on a barbell"
-          loading="lazy"
-          width={1024}
-          height={1280}
-          className="aspect-[4/5] w-full object-cover"
-        />
-        <div className="flex flex-col justify-center gap-6">
-          <h2 className="display text-3xl sm:text-5xl">The artwork</h2>
-          <p className="text-sm text-muted-foreground">{PLACEHOLDER}</p>
+      {/* Why No Doubts exists */}
+      <section className="mx-auto max-w-[1600px] px-4 py-16 sm:px-8">
+        <div className="max-w-prose space-y-6">
+          <h2 className="display text-3xl sm:text-5xl">Why No Doubts exists</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            We created No Doubts Apparel to represent the confidence that comes
+            from putting in the work, trusting your preparation, and knowing
+            you're capable of more than you think. We've seen what that belief
+            does under a heavy bar, and we've seen it carry into careers,
+            relationships, and everyday life — for us and for the lifters we've
+            cheered for on our platform. That's why we started an apparel
+            company built around it.
+          </p>
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            We wanted to create gear that looks and feels as strong and bold as
+            the work you put in. Each design represents something you can
+            proudly wear on the platform, at the gym, or out in the world.
+          </p>
+        </div>
+      </section>
+
+      {/* Mindset statement */}
+      <section className="border-y border-border">
+        <div className="mx-auto max-w-[1600px] px-4 py-20 sm:px-8 sm:py-28">
+          <h2 className="display max-w-5xl text-4xl leading-[1.05] sm:text-6xl lg:text-7xl">
+            No Doubts isn't just a name.{" "}
+            <span className="text-muted-foreground">It's a mindset.</span>
+          </h2>
+          <p className="mt-8 max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Stop doubting yourself and start trusting that you're capable of
+            more than you think. We can't wait to see you all in our gear.
+          </p>
           <Link
             to="/shop"
-            className="display w-fit bg-bone px-8 py-4 text-lg text-ink transition-colors hover:bg-bone/85"
+            className="display mt-10 inline-flex w-fit bg-bone px-8 py-4 text-lg text-ink transition-colors hover:bg-bone/85"
           >
-            Shop the drop
+            Shop the collection
           </Link>
         </div>
       </section>
