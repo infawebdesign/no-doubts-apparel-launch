@@ -1,7 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  accentText,
   formatPrice,
   getProduct,
   products,
@@ -112,10 +111,7 @@ function ProductDetail({ product }: { product: Product }) {
         </div>
 
         <div className="lg:sticky lg:top-28 lg:h-fit">
-          <p className={`label ${accentText[product.colorKey]}`}>
-            {product.tagline}
-          </p>
-          <h1 className="display mt-3 text-4xl sm:text-6xl">{product.name}</h1>
+          <h1 className="display text-4xl sm:text-6xl">{product.name}</h1>
           <p className="mt-4 text-xl font-semibold">
             {formatPrice(product.priceCents)}
           </p>
