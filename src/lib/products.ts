@@ -48,16 +48,16 @@ export const products: Product[] = [
   {
     id: "nd-tiger",
     slug: "earn-your-total",
-    name: "Earn Your Total Tee",
+    name: "On The Prowl Tee — Earn Your Total",
     tagline: "Tiger graphic / front print",
     priceCents: 3000,
     stock: 100,
     colorKey: "tiger",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "Striking tiger design, reminding you to have no doubts and earn the total you worked for.",
     images: [
-      { url: tigerTee.url, alt: "Earn Your Total tee, front print" },
+      { url: tigerTee.url, alt: "On The Prowl Tee — Earn Your Total, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -66,16 +66,16 @@ export const products: Product[] = [
   {
     id: "nd-snake",
     slug: "hit-the-standard",
-    name: "Hit The Standard Tee",
+    name: "Strike Tee — Hit The Standard",
     tagline: "Snake + dumbbell / front print",
     priceCents: 3000,
     stock: 100,
     colorKey: "cobalt",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "A strong, full back print reminding you to hit the standard with secondary ND logo on front.",
     images: [
-      { url: "/snake-tee-front.png", alt: "Hit The Standard tee, front print" },
+      { url: "/snake-tee-front.png", alt: "Strike Tee — Hit The Standard, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -91,9 +91,9 @@ export const products: Product[] = [
     colorKey: "lime",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "Ode to a classic jersey look, \"Leave No Doubts\" with secondary ND logo on sleeve. Simple and sharp!",
     images: [
-      { url: scriptTee.url, alt: "Varsity tee, front print" },
+      { url: scriptTee.url, alt: "Varsity Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -102,16 +102,16 @@ export const products: Product[] = [
   {
     id: "nd-wordmark",
     slug: "og",
-    name: "OG Tee",
+    name: "OG No Doubts Basic Tee",
     tagline: "Wordmark / front print",
     priceCents: 2500,
     stock: 100,
     colorKey: "magenta",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "Our primary logo in a clean front print for those proud to rep the brand's mindset!",
     images: [
-      { url: ogTee.url, alt: "OG tee, front print" },
+      { url: ogTee.url, alt: "OG No Doubts Basic Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
