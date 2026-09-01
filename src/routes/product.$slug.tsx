@@ -113,10 +113,10 @@ function ProductDetail({ product }: { product: Product }) {
         <div className="lg:sticky lg:top-28 lg:h-fit">
           <h1 className="display text-4xl sm:text-6xl">{product.name}</h1>
           <p className="mt-4 text-xl font-semibold">
-            {formatPrice(product.priceCents)}
+            {formatPrice(product.priceCents)} CAD
           </p>
           <p className="label mt-1 text-muted-foreground">
-            Pricing synced from Square
+            All sizes same price + HST
           </p>
 
           <div className="mt-8">
@@ -138,7 +138,9 @@ function ProductDetail({ product }: { product: Product }) {
               ))}
             </div>
             <p className="label mt-3 text-muted-foreground">
-              Availability syncs from Square inventory
+              {product.stock === null
+                ? "Availability syncs from Square inventory"
+                : `${product.stock} available`}
             </p>
           </div>
 
@@ -164,7 +166,8 @@ function ProductDetail({ product }: { product: Product }) {
             <div>
               <h2 className="label text-bone">Details</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                [Materials, fit and care details to be supplied.]
+                60/40 blend. Unisex sizing from XS–2XL. Price is the same across
+                all sizes.
               </p>
             </div>
             <div>

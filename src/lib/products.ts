@@ -1,7 +1,7 @@
 import tigerTee from "@/assets/tiger-tee.png.asset.json";
 import snakeTee from "@/assets/snake-tee.png.asset.json";
 import scriptTee from "@/assets/script-tee.png.asset.json";
-import wordmarkTee from "@/assets/nodoubts-wordmark-tee.png.asset.json";
+import ogTee from "@/assets/og-tee.png.asset.json";
 
 /**
  * Product shape mirrors what a Square Catalog item will provide.
@@ -29,6 +29,8 @@ export type Product = {
   tagline: string;
   /** Price in cents. Square is the source of truth once connected. */
   priceCents: number | null;
+  /** Total units available. Square inventory count maps here later. */
+  stock: number | null;
   colorKey: "lime" | "cobalt" | "magenta" | "tiger";
   status: "available" | "coming-soon";
   /** Placeholder copy until final descriptions are supplied. */
@@ -37,7 +39,7 @@ export type Product = {
   variations: ProductVariation[];
 };
 
-const SIZES = ["S", "M", "L", "XL", "2XL"];
+const SIZES = ["XS", "S", "M", "L", "XL", "2XL"];
 
 const sizeVariations = (slug: string): ProductVariation[] =>
   SIZES.map((size) => ({ id: `${slug}-${size}`, size, available: null }));
@@ -45,16 +47,17 @@ const sizeVariations = (slug: string): ProductVariation[] =>
 export const products: Product[] = [
   {
     id: "nd-tiger",
-    slug: "earn-your-stripes",
-    name: "Earn Your Stripes Tee",
+    slug: "earn-your-total",
+    name: "On The Prowl Tee — Earn Your Total",
     tagline: "Tiger graphic / front print",
-    priceCents: null,
+    priceCents: 3000,
+    stock: 100,
     colorKey: "tiger",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "Striking tiger design, reminding you to have no doubts and earn the total you worked for.",
     images: [
-      { url: tigerTee.url, alt: "Earn Your Stripes tee, front print" },
+      { url: tigerTee.url, alt: "On The Prowl Tee — Earn Your Total, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -63,15 +66,16 @@ export const products: Product[] = [
   {
     id: "nd-snake",
     slug: "hit-the-standard",
-    name: "Hit The Standard Tee",
+    name: "Strike Tee — Hit The Standard",
     tagline: "Snake + dumbbell / front print",
-    priceCents: 5500,
+    priceCents: 3000,
+    stock: 100,
     colorKey: "cobalt",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "A strong, full back print reminding you to hit the standard with secondary ND logo on front.",
     images: [
-      { url: "/snake-tee-front.png", alt: "Hit The Standard tee, front print" },
+      { url: "/snake-tee-front.png", alt: "Strike Tee — Hit The Standard, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -79,16 +83,17 @@ export const products: Product[] = [
   },
   {
     id: "nd-script",
-    slug: "leave-no-doubts",
-    name: "Leave No Doubts Script Tee",
+    slug: "varsity",
+    name: "Varsity Tee",
     tagline: "Script wordmark / front print",
-    priceCents: null,
+    priceCents: 3000,
+    stock: 100,
     colorKey: "lime",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "Ode to a classic jersey look, \"Leave No Doubts\" with secondary ND logo on sleeve. Simple and sharp!",
     images: [
-      { url: scriptTee.url, alt: "Leave No Doubts script tee" },
+      { url: scriptTee.url, alt: "Varsity Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -96,16 +101,17 @@ export const products: Product[] = [
   },
   {
     id: "nd-wordmark",
-    slug: "nodoubts-wordmark",
-    name: "No-Doubts Wordmark Tee",
+    slug: "og",
+    name: "OG No Doubts Basic Tee",
     tagline: "Wordmark / front print",
-    priceCents: null,
+    priceCents: 2500,
+    stock: 100,
     colorKey: "magenta",
     status: "available",
     description:
-      "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
+      "Our primary logo in a clean front print for those proud to rep the brand's mindset!",
     images: [
-      { url: wordmarkTee.url, alt: "No-Doubts wordmark tee, front print" },
+      { url: ogTee.url, alt: "OG No Doubts Basic Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
