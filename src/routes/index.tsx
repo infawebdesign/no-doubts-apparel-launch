@@ -24,7 +24,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const featured = products.find((p) => p.slug === "earn-your-stripes");
+  const featured = products.find((p) => p.slug === "earn-your-total");
   return (
     <>
 
@@ -32,7 +32,7 @@ function Home() {
         <div className="relative min-h-[100svh] overflow-hidden">
           <img
             src={heroImg}
-            alt="No Doubts Apparel campaign — Earn Your Stripes tee"
+            alt="No Doubts Apparel campaign — Earn Your Total tee"
             width={1920}
             height={1152}
             className="absolute inset-0 size-full object-cover"
