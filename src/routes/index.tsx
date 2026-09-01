@@ -29,7 +29,7 @@ function Home() {
     <>
 
       <section className="relative">
-        <div className="relative min-h-[100svh] overflow-hidden">
+        <div className="relative min-h-[100svh]">
           <img
             src={heroImg}
             alt="No Doubts Apparel campaign — Earn Your Total tee"
@@ -38,13 +38,13 @@ function Home() {
             className="absolute inset-0 size-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-ink/40" />
-          <div className="relative mx-auto flex min-h-[100svh] max-w-[1700px] flex-col justify-end px-4 pt-28 pb-12 sm:px-8 sm:pb-16">
-            <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="relative mx-auto flex min-h-[100svh] max-w-[1700px] flex-col justify-end px-4 pt-24 pb-8 sm:px-8 sm:pb-10">
+            <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
               <div>
-<h1 className="display text-[11vw] leading-[0.85] sm:text-[8vw] lg:text-[6.5rem]">
-                   No&#8209;Doubts
-                 </h1>
-                <p className="display mt-6 text-lg text-bone sm:text-2xl">
+                <h1 className="display text-[9vw] leading-[0.85] sm:text-[7vw] lg:text-[5.5rem]">
+                  No&#8209;Doubts
+                </h1>
+                <p className="display mt-4 text-base text-bone sm:text-xl lg:text-2xl">
                   Hit the standard.
                   <br />
                   Earn your total.
@@ -53,7 +53,7 @@ function Home() {
                 </p>
                 <Link
                   to="/shop"
-                  className="label mt-8 inline-flex w-fit items-center gap-3 border border-bone px-8 py-4 transition-colors hover:bg-bone hover:text-ink"
+                  className="label mt-6 inline-flex w-fit items-center gap-3 border border-bone px-6 py-3 transition-colors hover:bg-bone hover:text-ink sm:px-8 sm:py-4"
                 >
                   Shop the drop <span aria-hidden>&rarr;</span>
                 </Link>
@@ -63,7 +63,7 @@ function Home() {
                 <Link
                   to="/product/$slug"
                   params={{ slug: featured.slug }}
-                  className="group hidden border border-bone/25 bg-ink/60 p-5 backdrop-blur-md lg:block"
+                  className="group hidden border border-bone/25 bg-ink/60 p-4 backdrop-blur-md lg:block"
                 >
                   <div className="aspect-[4/5] overflow-hidden bg-card">
                     {featured.images[0]?.url && (
@@ -75,11 +75,11 @@ function Home() {
                       />
                     )}
                   </div>
-                  <p className="display mt-5 text-xl">{featured.name}</p>
+                  <p className="display mt-4 text-lg">{featured.name}</p>
                   <p className="mt-1 text-sm text-bone/70">
                     {formatPrice(featured.priceCents)}
                   </p>
-                  <span className="label mt-4 flex items-center justify-between border border-bone px-5 py-3 transition-colors group-hover:bg-bone group-hover:text-ink">
+                  <span className="label mt-3 flex items-center justify-between border border-bone px-4 py-2.5 transition-colors group-hover:bg-bone group-hover:text-ink">
                     Shop now <span aria-hidden>&rarr;</span>
                   </span>
                 </Link>
