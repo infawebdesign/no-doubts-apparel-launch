@@ -32,8 +32,7 @@ function About() {
   return (
     <div>
       <header className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-20 sm:pt-36">
-        <p className="label text-muted-foreground">The brand</p>
-        <h1 className="display mt-4 text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
+        <h1 className="display text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
           No <span className="text-muted-foreground">Doubts</span>
         </h1>
       </header>
