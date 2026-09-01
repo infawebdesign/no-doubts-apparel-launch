@@ -40,7 +40,7 @@ function About() {
       <div className="hairline h-px w-full" />
 
       {/* Founders */}
-      <section className="mx-auto grid max-w-[1600px] items-center gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="mx-auto grid max-w-[1600px] items-center gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[1fr_0.65fr]">
         <div className="space-y-6">
           <h2 className="display text-3xl sm:text-5xl">
             Sarah &amp; Francesco Catalano
@@ -64,7 +64,7 @@ function About() {
           loading="lazy"
           width={1143}
           height={1600}
-          className="aspect-[4/5] w-full object-cover object-top"
+          className="mx-auto aspect-[4/5] w-full max-w-md object-cover object-top lg:max-w-sm xl:max-w-md"
         />
       </section>
 
