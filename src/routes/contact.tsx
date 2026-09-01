@@ -96,7 +96,7 @@ function Contact() {
               href="https://www.instagram.com/nodoubts.apparel?utm_source=qr"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 text-sm text-bone transition-colors hover:text-bone/80"
+              className="mt-2 flex items-center gap-2 text-sm text-bone transition-colors hover:text-bone/80"
               aria-label="No Doubts Apparel on Instagram"
             >
               <svg
