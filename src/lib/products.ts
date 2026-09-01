@@ -39,7 +39,7 @@ export type Product = {
   variations: ProductVariation[];
 };
 
-const SIZES = ["S", "M", "L", "XL", "2XL"];
+const SIZES = ["XS", "S", "M", "L", "XL", "2XL"];
 
 const sizeVariations = (slug: string): ProductVariation[] =>
   SIZES.map((size) => ({ id: `${slug}-${size}`, size, available: null }));
