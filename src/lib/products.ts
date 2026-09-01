@@ -63,14 +63,14 @@ export const products: Product[] = [
     id: "nd-snake",
     slug: "hit-the-standard",
     name: "Hit The Standard Tee",
-    tagline: "Snake + dumbbell / back print",
+    tagline: "Snake + dumbbell / front print",
     priceCents: 5500,
     colorKey: "cobalt",
     status: "available",
     description:
       "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
     images: [
-      { url: snakeTee.url, alt: "Hit The Standard tee, front and back" },
+      { url: "/snake-tee-front.png", alt: "Hit The Standard tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],

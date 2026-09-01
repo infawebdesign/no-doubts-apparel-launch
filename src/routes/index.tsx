@@ -91,9 +91,12 @@ function Home() {
 
       <section className="mx-auto max-w-[1600px] px-4 py-16 sm:px-8">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-b border-border pb-4">
-          <h2 className="display text-3xl sm:text-5xl">The Drop</h2>
-          <Link to="/shop" className="label shrink-0 text-muted-foreground hover:underline">
-            View all
+          <h2 className="display text-3xl sm:text-5xl">Featured Collection</h2>
+          <Link
+            to="/shop"
+            className="label inline-flex w-fit items-center gap-3 border border-bone px-6 py-3 transition-colors hover:bg-bone hover:text-ink"
+          >
+            Shop now <span aria-hidden>&rarr;</span>
           </Link>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -114,7 +117,6 @@ function Home() {
             className="h-full max-h-[70vh] w-full object-cover"
           />
           <div className="flex flex-col justify-center gap-6 px-4 py-16 sm:px-12">
-            <p className="label text-muted-foreground">The standard</p>
             <h2 className="display text-4xl sm:text-6xl">
               Built in the <span className="text-muted-foreground">gym</span>, worn in
               the <span className="text-muted-foreground">street</span>
