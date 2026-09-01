@@ -1,7 +1,7 @@
 import tigerTee from "@/assets/tiger-tee.png.asset.json";
 import snakeTee from "@/assets/snake-tee.png.asset.json";
 import scriptTee from "@/assets/script-tee.png.asset.json";
-import wordmarkTee from "@/assets/nodoubts-wordmark-tee.png.asset.json";
+import ogTee from "@/assets/nodoubts-wordmark-tee.png.asset.json";
 
 /**
  * Product shape mirrors what a Square Catalog item will provide.
