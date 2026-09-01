@@ -47,16 +47,17 @@ const sizeVariations = (slug: string): ProductVariation[] =>
 export const products: Product[] = [
   {
     id: "nd-tiger",
-    slug: "earn-your-stripes",
-    name: "Earn Your Stripes Tee",
+    slug: "earn-your-total",
+    name: "Earn Your Total Tee",
     tagline: "Tiger graphic / front print",
-    priceCents: null,
+    priceCents: 3000,
+    stock: 100,
     colorKey: "tiger",
     status: "available",
     description:
       "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
     images: [
-      { url: tigerTee.url, alt: "Earn Your Stripes tee, front print" },
+      { url: tigerTee.url, alt: "Earn Your Total tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -67,7 +68,8 @@ export const products: Product[] = [
     slug: "hit-the-standard",
     name: "Hit The Standard Tee",
     tagline: "Snake + dumbbell / front print",
-    priceCents: 5500,
+    priceCents: 3000,
+    stock: 100,
     colorKey: "cobalt",
     status: "available",
     description:
@@ -81,16 +83,17 @@ export const products: Product[] = [
   },
   {
     id: "nd-script",
-    slug: "leave-no-doubts",
-    name: "Leave No Doubts Script Tee",
+    slug: "varsity",
+    name: "Varsity Tee",
     tagline: "Script wordmark / front print",
-    priceCents: null,
+    priceCents: 3000,
+    stock: 100,
     colorKey: "lime",
     status: "available",
     description:
       "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
     images: [
-      { url: scriptTee.url, alt: "Leave No Doubts script tee" },
+      { url: scriptTee.url, alt: "Varsity tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
@@ -98,16 +101,17 @@ export const products: Product[] = [
   },
   {
     id: "nd-wordmark",
-    slug: "nodoubts-wordmark",
-    name: "No-Doubts Wordmark Tee",
+    slug: "og",
+    name: "OG Tee",
     tagline: "Wordmark / front print",
-    priceCents: null,
+    priceCents: 2500,
+    stock: 100,
     colorKey: "magenta",
     status: "available",
     description:
       "[Placeholder description — final product copy to be supplied. Do not treat this text as final.]",
     images: [
-      { url: wordmarkTee.url, alt: "No-Doubts wordmark tee, front print" },
+      { url: wordmarkTee.url, alt: "OG tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
     ],
