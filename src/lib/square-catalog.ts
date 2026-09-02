@@ -59,6 +59,24 @@ export function findSquareItem(
 
 const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 
+/**
+ * Temporary website-level merchandising restriction: 3XL stays in Square
+ * but must not be offered on the storefront until Francesco re-enables it.
+ */
+const HIDDEN_SIZES = new Set(["3XL"]);
+
+export function isVariationHidden(name: string | null): boolean {
+  return name != null && HIDDEN_SIZES.has(name.trim().toUpperCase());
+}
+
+/** Variations the storefront is allowed to sell right now. */
+export function visibleVariations(
+  item: SquareItem | undefined,
+): SquareVariation[] {
+  if (!item) return [];
+  return item.variations.filter((v) => !isVariationHidden(v.name));
+}
+
 const sizeRank = (name: string | null) => {
   if (!name) return SIZE_ORDER.length;
   const idx = SIZE_ORDER.findIndex(
@@ -67,18 +85,16 @@ const sizeRank = (name: string | null) => {
   return idx === -1 ? SIZE_ORDER.length : idx;
 };
 
-/** Variations sorted into the usual size run. Square remains the source of truth. */
+/** Variations sorted into the usual size run, excluding hidden sizes. */
 export function sortedVariations(item: SquareItem | undefined) {
-  if (!item) return [];
-  return [...item.variations].sort(
+  return visibleVariations(item).sort(
     (a, b) => sizeRank(a.name) - sizeRank(b.name),
   );
 }
 
-/** Lowest live price across variations, in cents. */
+/** Lowest live price across sellable variations, in cents. */
 export function itemPriceAmount(item: SquareItem | undefined): number | null {
-  if (!item) return null;
-  const prices = item.variations
+  const prices = visibleVariations(item)
     .map((v) => v.priceAmount)
     .filter((p): p is number => typeof p === "number");
   if (prices.length === 0) return null;
@@ -86,10 +102,9 @@ export function itemPriceAmount(item: SquareItem | undefined): number | null {
 }
 
 export function itemCurrency(item: SquareItem | undefined): string {
-  return item?.variations.find((v) => v.currency)?.currency ?? "CAD";
+  return visibleVariations(item).find((v) => v.currency)?.currency ?? "CAD";
 }
 
 export function itemInStock(item: SquareItem | undefined): boolean {
-  if (!item) return false;
-  return item.variations.some((v) => v.inStock);
+  return visibleVariations(item).some((v) => v.inStock);
 }
