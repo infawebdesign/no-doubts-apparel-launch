@@ -10,7 +10,15 @@ import {
 } from "@/lib/square-oauth.server";
 
 const SQUARE_CATALOG_URL = "https://connect.squareup.com/v2/catalog/list";
+const SQUARE_INVENTORY_URL =
+  "https://connect.squareup.com/v2/inventory/counts/batch-retrieve";
 const REFRESH_BUFFER_MS = 24 * 60 * 60 * 1000; // refresh 24h before expiry
+
+type InventoryCount = {
+  catalog_object_id?: string;
+  state?: string;
+  quantity?: string | number;
+};
 
 type SquareMoney = { amount?: number; currency?: string };
 
@@ -204,6 +212,54 @@ export const Route = createFileRoute("/api/square/products")({
           );
         }
 
+        // --- Inventory ---
+        const variationIds = objects
+          .filter((obj) => obj.type === "ITEM")
+          .flatMap((obj) => obj.item_data?.variations ?? [])
+          .map((v) => v.id);
+
+        const inventoryByVariation = new Map<string, number>();
+        if (variationIds.length > 0) {
+          let inventoryCursor: string | undefined;
+          do {
+            const res = await fetch(SQUARE_INVENTORY_URL, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Square-Version": SQUARE_VERSION,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                catalog_object_ids: variationIds,
+                states: ["IN_STOCK"],
+                ...(inventoryCursor ? { cursor: inventoryCursor } : {}),
+              }),
+            });
+            const body = (await res.json().catch(() => null)) as {
+              counts?: InventoryCount[];
+              cursor?: string;
+            } | null;
+
+            if (!res.ok) {
+              return Response.json(
+                { error: "Square returned an error." },
+                { status: 502, headers: { "cache-control": "no-store" } },
+              );
+            }
+
+            for (const count of body?.counts ?? []) {
+              if (count.state !== "IN_STOCK" || !count.catalog_object_id)
+                continue;
+              const qty = Number(count.quantity);
+              inventoryByVariation.set(
+                count.catalog_object_id,
+                Number.isFinite(qty) ? qty : 0,
+              );
+            }
+            inventoryCursor = body?.cursor;
+          } while (inventoryCursor);
+        }
+
         const imageUrls = new Map<string, string>();
         for (const obj of objects) {
           if (obj.type === "IMAGE" && obj.image_data?.url) {
@@ -223,12 +279,20 @@ export const Route = createFileRoute("/api/square/products")({
               imageUrls: imageIds
                 .map((id) => imageUrls.get(id))
                 .filter((u): u is string => Boolean(u)),
-              variations: (obj.item_data?.variations ?? []).map((v) => ({
-                id: v.id,
-                name: v.item_variation_data?.name ?? null,
-                priceAmount: v.item_variation_data?.price_money?.amount ?? null,
-                currency: v.item_variation_data?.price_money?.currency ?? null,
-              })),
+              variations: (obj.item_data?.variations ?? []).map((v) => {
+                const inventoryQuantity =
+                  inventoryByVariation.get(v.id) ?? null;
+                return {
+                  id: v.id,
+                  name: v.item_variation_data?.name ?? null,
+                  priceAmount:
+                    v.item_variation_data?.price_money?.amount ?? null,
+                  currency:
+                    v.item_variation_data?.price_money?.currency ?? null,
+                  inventoryQuantity,
+                  inStock: inventoryQuantity === null || inventoryQuantity > 0,
+                };
+              }),
             };
           });
 
