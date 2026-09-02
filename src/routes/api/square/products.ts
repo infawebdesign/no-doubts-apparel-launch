@@ -279,12 +279,20 @@ export const Route = createFileRoute("/api/square/products")({
               imageUrls: imageIds
                 .map((id) => imageUrls.get(id))
                 .filter((u): u is string => Boolean(u)),
-              variations: (obj.item_data?.variations ?? []).map((v) => ({
-                id: v.id,
-                name: v.item_variation_data?.name ?? null,
-                priceAmount: v.item_variation_data?.price_money?.amount ?? null,
-                currency: v.item_variation_data?.price_money?.currency ?? null,
-              })),
+              variations: (obj.item_data?.variations ?? []).map((v) => {
+                const inventoryQuantity =
+                  inventoryByVariation.get(v.id) ?? null;
+                return {
+                  id: v.id,
+                  name: v.item_variation_data?.name ?? null,
+                  priceAmount:
+                    v.item_variation_data?.price_money?.amount ?? null,
+                  currency:
+                    v.item_variation_data?.price_money?.currency ?? null,
+                  inventoryQuantity,
+                  inStock: inventoryQuantity === null || inventoryQuantity > 0,
+                };
+              }),
             };
           });
 
