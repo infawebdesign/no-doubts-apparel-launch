@@ -14,44 +14,27 @@ export type ProductImage = {
   alt: string;
 };
 
-export type ProductVariation = {
-  /** Square catalog variation id goes here later. */
-  id: string;
-  size: string;
-  /** Populated from Square inventory later. `null` = unknown / not yet synced. */
-  available: boolean | null;
-};
-
 export type Product = {
   id: string;
   slug: string;
   name: string;
+  /** Name of the matching item in the Square catalog (source of truth). */
+  squareName: string;
   tagline: string;
-  /** Price in cents. Square is the source of truth once connected. */
-  priceCents: number | null;
-  /** Total units available. Square inventory count maps here later. */
-  stock: number | null;
   colorKey: "lime" | "cobalt" | "magenta" | "tiger";
   status: "available" | "coming-soon";
   /** Placeholder copy until final descriptions are supplied. */
   description: string;
   images: ProductImage[];
-  variations: ProductVariation[];
 };
-
-const SIZES = ["XS", "S", "M", "L", "XL", "2XL"];
-
-const sizeVariations = (slug: string): ProductVariation[] =>
-  SIZES.map((size) => ({ id: `${slug}-${size}`, size, available: null }));
 
 export const products: Product[] = [
   {
     id: "nd-tiger",
     slug: "earn-your-total",
     name: "On The Prowl Tee — Earn Your Total",
+    squareName: "Earn Your Total",
     tagline: "Tiger graphic / front print",
-    priceCents: 3000,
-    stock: 100,
     colorKey: "tiger",
     status: "available",
     description:
@@ -60,16 +43,14 @@ export const products: Product[] = [
       { url: tigerTee, alt: "On The Prowl Tee — Earn Your Total, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ],
-    variations: sizeVariations("nd-tiger"),
-  },
+    ]
+,  },
   {
     id: "nd-snake",
     slug: "hit-the-standard",
     name: "Strike Tee — Hit The Standard",
+    squareName: "Hit the Standard",
     tagline: "Snake + dumbbell / front print",
-    priceCents: 3000,
-    stock: 100,
     colorKey: "cobalt",
     status: "available",
     description:
@@ -78,16 +59,14 @@ export const products: Product[] = [
       { url: "/snake-tee-front.png", alt: "Strike Tee — Hit The Standard, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ],
-    variations: sizeVariations("nd-snake"),
-  },
+    ]
+,  },
   {
     id: "nd-script",
     slug: "varsity",
     name: "Varsity Tee",
+    squareName: "Varsity",
     tagline: "Script wordmark / front print",
-    priceCents: 3000,
-    stock: 100,
     colorKey: "lime",
     status: "available",
     description:
@@ -96,16 +75,14 @@ export const products: Product[] = [
       { url: scriptTee, alt: "Varsity Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ],
-    variations: sizeVariations("nd-script"),
-  },
+    ]
+,  },
   {
     id: "nd-wordmark",
     slug: "og",
     name: "OG No Doubts Basic Tee",
+    squareName: "OG",
     tagline: "Wordmark / front print",
-    priceCents: 2500,
-    stock: 100,
     colorKey: "magenta",
     status: "available",
     description:
@@ -114,17 +91,17 @@ export const products: Product[] = [
       { url: ogTee, alt: "OG No Doubts Basic Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ],
-    variations: sizeVariations("nd-wordmark"),
-  },
+    ]
+,  },
 ];
 
 export const getProduct = (slug: string) =>
   products.find((p) => p.slug === slug);
 
-export const formatPrice = (priceCents: number | null) =>
-  priceCents === null
-    ? "Price TBC"
+/** Format a Square price amount (cents) for display. */
+export const formatPrice = (priceCents: number | null | undefined) =>
+  priceCents === null || priceCents === undefined
+    ? "Price unavailable"
     : `$${(priceCents / 100).toFixed(2)}`;
 
 export const accentClass: Record<Product["colorKey"], string> = {
