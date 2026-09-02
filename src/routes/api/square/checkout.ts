@@ -31,7 +31,7 @@ type SquareApiError = {
 
 type DebugInfo = {
   stage: string;
-  squareStatus?: number;
+  squareStatus?: number | undefined;
   squareCode?: string | null;
   squareCategory?: string | null;
   squareDetail?: string | null;
