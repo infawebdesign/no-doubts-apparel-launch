@@ -1,18 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
-  SQUARE_OAUTH_TOKEN_URL,
   SQUARE_VERSION,
-  decryptToken,
-  encryptToken,
   getSquareEnv,
-  importEncryptionKey,
+  getValidSquareAccessToken,
 } from "@/lib/square-oauth.server";
 
 const SQUARE_CATALOG_URL = "https://connect.squareup.com/v2/catalog/list";
 const SQUARE_INVENTORY_URL =
   "https://connect.squareup.com/v2/inventory/counts/batch-retrieve";
-const REFRESH_BUFFER_MS = 24 * 60 * 60 * 1000; // refresh 24h before expiry
 
 type InventoryCount = {
   catalog_object_id?: string;
@@ -42,140 +38,21 @@ type SquareCatalogObject = {
   image_data?: { url?: string };
 };
 
-type TokenRow = {
-  merchant_id: string;
-  access_token_ciphertext: string;
-  access_token_iv: string;
-  refresh_token_ciphertext: string;
-  refresh_token_iv: string;
-  expires_at: string | null;
-};
-
-function isExpiring(expiresAt: string | null): boolean {
-  if (!expiresAt) return true;
-  const ts = Date.parse(expiresAt);
-  if (Number.isNaN(ts)) return true;
-  return ts - Date.now() <= REFRESH_BUFFER_MS;
-}
-
 export const Route = createFileRoute("/api/square/products")({
   server: {
     handlers: {
       GET: async () => {
         const env = await getSquareEnv();
-        if (!env.SQUARE_DB || !env.SQUARE_TOKEN_ENCRYPTION_KEY) {
-          // Not an error condition: environments without the Square bindings
-          // (e.g. local preview) simply have no catalog to serve.
-          return Response.json(
-            { configured: false, items: [] },
-            { status: 200, headers: { "cache-control": "no-store" } },
-          );
+        const tokenResult = await getValidSquareAccessToken(env);
+
+        if (!tokenResult.ok) {
+          return Response.json(tokenResult.payload, {
+            status: tokenResult.status,
+            headers: { "cache-control": "no-store" },
+          });
         }
 
-        const row = await env.SQUARE_DB.prepare(
-          `SELECT merchant_id, access_token_ciphertext, access_token_iv,
-                  refresh_token_ciphertext, refresh_token_iv, expires_at
-             FROM square_oauth_tokens
-            ORDER BY updated_at DESC
-            LIMIT 1`,
-        ).first<TokenRow>();
-
-        if (!row) {
-          return Response.json(
-            { configured: false, items: [] },
-            { status: 200, headers: { "cache-control": "no-store" } },
-          );
-        }
-
-        const key = await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY);
-
-        let accessToken: string;
-        try {
-          accessToken = await decryptToken(
-            key,
-            row.access_token_ciphertext,
-            row.access_token_iv,
-          );
-        } catch {
-          return Response.json(
-            { error: "Square credentials could not be read." },
-            { status: 503, headers: { "cache-control": "no-store" } },
-          );
-        }
-
-        if (isExpiring(row.expires_at)) {
-          if (!env.SQUARE_APP_ID || !env.SQUARE_APP_SECRET) {
-            return Response.json(
-              { error: "Square is not configured on the server." },
-              { status: 503, headers: { "cache-control": "no-store" } },
-            );
-          }
-          try {
-            const refreshToken = await decryptToken(
-              key,
-              row.refresh_token_ciphertext,
-              row.refresh_token_iv,
-            );
-            const res = await fetch(SQUARE_OAUTH_TOKEN_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Square-Version": SQUARE_VERSION,
-              },
-              body: JSON.stringify({
-                client_id: env.SQUARE_APP_ID,
-                client_secret: env.SQUARE_APP_SECRET,
-                grant_type: "refresh_token",
-                refresh_token: refreshToken,
-              }),
-            });
-            const payload = (await res.json().catch(() => null)) as {
-              access_token?: string;
-              refresh_token?: string;
-              expires_at?: string;
-            } | null;
-
-            if (res.ok && payload?.access_token) {
-              const access = await encryptToken(key, payload.access_token);
-              if (payload.refresh_token) {
-                const refresh = await encryptToken(key, payload.refresh_token);
-                await env.SQUARE_DB.prepare(
-                  `UPDATE square_oauth_tokens
-                      SET access_token_ciphertext = ?, access_token_iv = ?,
-                          refresh_token_ciphertext = ?, refresh_token_iv = ?,
-                          expires_at = ?, updated_at = datetime('now')
-                    WHERE merchant_id = ?`,
-                )
-                  .bind(
-                    access.ciphertext,
-                    access.iv,
-                    refresh.ciphertext,
-                    refresh.iv,
-                    payload.expires_at ?? "",
-                    row.merchant_id,
-                  )
-                  .run();
-              } else {
-                await env.SQUARE_DB.prepare(
-                  `UPDATE square_oauth_tokens
-                      SET access_token_ciphertext = ?, access_token_iv = ?,
-                          expires_at = ?, updated_at = datetime('now')
-                    WHERE merchant_id = ?`,
-                )
-                  .bind(
-                    access.ciphertext,
-                    access.iv,
-                    payload.expires_at ?? "",
-                    row.merchant_id,
-                  )
-                  .run();
-              }
-              accessToken = payload.access_token;
-            }
-          } catch {
-            // fall through and try the existing token
-          }
-        }
+        const { accessToken } = tokenResult;
 
         const objects: SquareCatalogObject[] = [];
         let cursor: string | undefined;
