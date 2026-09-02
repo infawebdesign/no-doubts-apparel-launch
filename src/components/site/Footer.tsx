@@ -27,7 +27,7 @@ export function Footer() {
           <div className="space-y-3">
             <p className="label text-muted-foreground">Info</p>
             <p className="text-sm text-muted-foreground">
-              [Shipping policy TBC]
+              $15 flat-rate shipping within Canada
             </p>
             <p className="text-sm text-muted-foreground">[Returns TBC]</p>
             <p className="text-sm text-muted-foreground">[Size guide TBC]</p>
