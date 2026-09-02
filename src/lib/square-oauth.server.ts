@@ -26,6 +26,7 @@ type D1Result = { success: boolean };
 type D1Statement = {
   bind: (...values: unknown[]) => D1Statement;
   run: () => Promise<D1Result>;
+  first: <T = Record<string, unknown>>() => Promise<T | null>;
 };
 export type D1Database = { prepare: (query: string) => D1Statement };
 
