@@ -44,10 +44,38 @@ function ProductPage() {
 
 function ProductDetail({ product }: { product: Product }) {
   const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState<string | null>(null);
+  const [variationId, setVariationId] = useState<string | null>(null);
+
+  const { data, isPending, isError } = useQuery(squareCatalogQuery);
+  const squareItem = findSquareItem(data, product.squareName);
+  const variations = sortedVariations(squareItem);
+  const selected = variations.find((v) => v.id === variationId) ?? null;
+  const price = selected?.priceAmount ?? itemPriceAmount(squareItem);
+  const currency = itemCurrency(squareItem);
+  const { addLine } = useCart();
+  const [added, setAdded] = useState(false);
+
+  const canAdd = Boolean(squareItem && selected && selected.inStock);
+
+  const handleAdd = () => {
+    if (!squareItem || !selected || !selected.inStock) return;
+    addLine({
+      squareItemId: squareItem.id,
+      squareVariationId: selected.id,
+      name: product.name,
+      slug: product.slug,
+      size: selected.name ?? "",
+      priceAmount: selected.priceAmount,
+      currency: selected.currency ?? currency,
+      imageUrl: product.images[0]?.url ?? null,
+      imageAlt: product.images[0]?.alt ?? product.name,
+    });
+    setAdded(true);
+  };
 
   const image = product.images[activeImage];
   const related = products.filter((p) => p.id !== product.id).slice(0, 3);
+
 
   return (
     <div>
