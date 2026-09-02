@@ -1,7 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import heroImg from "@/assets/hero-campaign.jpg";
 import editorialImg from "@/assets/editorial-lift.jpg";
+import { useQuery } from "@tanstack/react-query";
 import { formatPrice, products } from "@/lib/products";
+import {
+  STORE_ERROR_MESSAGE,
+  findSquareItem,
+  itemPriceAmount,
+  squareCatalogQuery,
+} from "@/lib/square-catalog";
 import { ProductCard } from "@/components/site/ProductCard";
 
 export const Route = createFileRoute("/")({
@@ -25,6 +32,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const featured = products.find((p) => p.slug === "earn-your-total");
+  const { data, isPending, isError } = useQuery(squareCatalogQuery);
+  const featuredPrice = itemPriceAmount(
+    findSquareItem(data, featured?.squareName ?? ""),
+  );
   return (
     <>
 
@@ -77,7 +88,7 @@ function Home() {
                   </div>
                   <p className="display mt-4 text-lg">{featured.name}</p>
                   <p className="mt-1 text-sm text-bone/70">
-                    {formatPrice(featured.priceCents)}
+                    {isPending ? "\u2014" : isError ? "" : formatPrice(featuredPrice)}
                   </p>
                   <span className="label mt-3 flex items-center justify-between border border-bone px-4 py-2.5 transition-colors group-hover:bg-bone group-hover:text-ink">
                     Shop now <span aria-hidden>&rarr;</span>
@@ -99,6 +110,11 @@ function Home() {
             Shop now <span aria-hidden>&rarr;</span>
           </Link>
         </div>
+        {isError && (
+          <p className="mt-6 text-sm text-muted-foreground">
+            {STORE_ERROR_MESSAGE}
+          </p>
+        )}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />

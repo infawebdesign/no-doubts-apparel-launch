@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X, ShoppingBag } from "lucide-react";
+import { useCart } from "@/lib/cart";
 
 const nav = [
   { to: "/shop", label: "Shop" },
@@ -10,6 +11,7 @@ const nav = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { count } = useCart();
 
   return (
     <header className="absolute inset-x-0 top-0 z-50">
@@ -32,9 +34,9 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center justify-end gap-5">
-          <button type="button" aria-label="Bag (0)" className="relative text-bone/80 transition-colors hover:text-bone">
+          <button type="button" aria-label={`Bag (${count})`} className="relative text-bone/80 transition-colors hover:text-bone">
             <ShoppingBag className="size-5" />
-            <span className="label absolute -top-1 -right-2 text-[9px] tracking-normal">0</span>
+            <span className="label absolute -top-1 -right-2 text-[9px] tracking-normal">{count}</span>
           </button>
           <button
             type="button"
