@@ -8,7 +8,7 @@ export function Footer() {
         <div>
           <p className="display text-4xl sm:text-6xl">No&nbsp;Doubts Apparel</p>
           <p className="label mt-4 text-muted-foreground">
-            Checkout is handled by Square — integration pending
+            Checkout handled securely by Square
           </p>
         </div>
         <div className="grid grid-cols-2 gap-10 sm:gap-16">
