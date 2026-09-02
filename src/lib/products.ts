@@ -26,7 +26,13 @@ export type Product = {
   /** Placeholder copy until final descriptions are supplied. */
   description: string;
   images: ProductImage[];
+  /** Static fallback price (cents) used only when the live Square catalog is unreachable. */
+  priceCents: number;
+  /** Static fallback size run used only when the live Square catalog is unreachable. */
+  sizes: string[];
 };
+
+export const FALLBACK_SIZES = ["XS", "S", "M", "L", "XL", "2XL"];
 
 export const products: Product[] = [
   {
@@ -37,6 +43,8 @@ export const products: Product[] = [
     tagline: "Tiger graphic / front print",
     colorKey: "tiger",
     status: "available",
+    priceCents: 3000,
+    sizes: FALLBACK_SIZES,
     description:
       "Striking tiger design, reminding you to have no doubts and earn the total you worked for.",
     images: [
@@ -53,6 +61,8 @@ export const products: Product[] = [
     tagline: "Snake + dumbbell / front print",
     colorKey: "cobalt",
     status: "available",
+    priceCents: 3000,
+    sizes: FALLBACK_SIZES,
     description:
       "A strong, full back print reminding you to hit the standard with secondary ND logo on front.",
     images: [
@@ -69,6 +79,8 @@ export const products: Product[] = [
     tagline: "Script wordmark / front print",
     colorKey: "lime",
     status: "available",
+    priceCents: 3000,
+    sizes: FALLBACK_SIZES,
     description:
       "Ode to a classic jersey look, \"Leave No Doubts\" with secondary ND logo on sleeve. Simple and sharp!",
     images: [
@@ -85,6 +97,8 @@ export const products: Product[] = [
     tagline: "Wordmark / front print",
     colorKey: "magenta",
     status: "available",
+    priceCents: 2500,
+    sizes: FALLBACK_SIZES,
     description:
       "Our primary logo in a clean front print for those proud to rep the brand's mindset!",
     images: [
