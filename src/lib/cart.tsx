@@ -70,16 +70,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (l) => l.squareVariationId === line.squareVariationId,
       );
       if (existing) {
-        return prev.map((l) =>
-          l.squareVariationId === line.squareVariationId
-            ? {
-                ...l,
-                ...line,
-                quantity: l.quantity + quantity,
-              }
-            : l,
-        );
+        const nextQuantity = l.quantity + quantity;
+        return prev
+          .map((l) =>
+            l.squareVariationId === line.squareVariationId
+              ? {
+                  ...l,
+                  ...line,
+                  quantity: nextQuantity,
+                }
+              : l,
+          )
+          .filter((l) => l.quantity > 0);
       }
+      if (quantity <= 0) return prev;
       return [...prev, { ...line, quantity }];
     });
   }, []);
