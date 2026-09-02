@@ -55,20 +55,35 @@ function ProductPage() {
 
 function ProductDetail({ product }: { product: Product }) {
   const [activeImage, setActiveImage] = useState(0);
-  const [variationId, setVariationId] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
-  const { data, isPending, isError: queryError } = useQuery(squareCatalogQuery);
+  const { data, isPending } = useQuery(squareCatalogQuery);
   const squareItem = findSquareItem(data, product.squareName);
-  // No matching Square item (unconfigured/disconnected) reads as unavailable.
-  const isError = queryError || (!isPending && !squareItem);
-  const variations = sortedVariations(squareItem);
-  const selected = variations.find((v) => v.id === variationId) ?? null;
-  const price = selected?.priceAmount ?? itemPriceAmount(squareItem);
+  const liveVariations = sortedVariations(squareItem);
+  // When the live catalog is unreachable, fall back to the static size run
+  // (display only — purchasing still requires live Square variation IDs).
+  const liveAvailable = liveVariations.length > 0;
+  const variations: SquareVariation[] = liveAvailable
+    ? liveVariations
+    : product.sizes.map((size) => ({
+        id: "",
+        name: size,
+        priceAmount: product.priceCents,
+        currency: "CAD",
+        inventoryQuantity: null,
+        inStock: true,
+      }));
+  const selected =
+    variations.find((v) => (v.name ?? "") === selectedSize) ?? null;
+  const price =
+    selected?.priceAmount ?? itemPriceAmount(squareItem) ?? product.priceCents;
   const currency = itemCurrency(squareItem);
   const { addLine } = useCart();
   const [added, setAdded] = useState(false);
 
-  const canAdd = Boolean(squareItem && selected && selected.inStock);
+  const canAdd = Boolean(
+    liveAvailable && selected && selected.id && selected.inStock,
+  );
 
   const handleAdd = () => {
     if (!squareItem || !selected || !selected.inStock) return;
