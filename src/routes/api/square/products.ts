@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const SQUARE_CATALOG_URL =
-  "https://connect.squareup.com/v2/catalog/list?types=ITEM,IMAGE";
-const SQUARE_VERSION = "2026-08-19";
+import {
+  SQUARE_OAUTH_TOKEN_URL,
+  SQUARE_VERSION,
+  decryptToken,
+  encryptToken,
+  getSquareEnv,
+  importEncryptionKey,
+} from "@/lib/square-oauth.server";
+
+const SQUARE_CATALOG_URL = "https://connect.squareup.com/v2/catalog/list";
+const REFRESH_BUFFER_MS = 24 * 60 * 60 * 1000; // refresh 24h before expiry
 
 type SquareMoney = { amount?: number; currency?: string };
 
@@ -14,7 +22,7 @@ type SquareVariation = {
   };
 };
 
-type SquareItemObject = {
+type SquareCatalogObject = {
   type: string;
   id: string;
   item_data?: {
@@ -23,63 +31,211 @@ type SquareItemObject = {
     image_ids?: string[];
     variations?: SquareVariation[];
   };
+  image_data?: { url?: string };
 };
+
+type TokenRow = {
+  merchant_id: string;
+  access_token_ciphertext: string;
+  access_token_iv: string;
+  refresh_token_ciphertext: string;
+  refresh_token_iv: string;
+  expires_at: string | null;
+};
+
+function isExpiring(expiresAt: string | null): boolean {
+  if (!expiresAt) return true;
+  const ts = Date.parse(expiresAt);
+  if (Number.isNaN(ts)) return true;
+  return ts - Date.now() <= REFRESH_BUFFER_MS;
+}
 
 export const Route = createFileRoute("/api/square/products")({
   server: {
     handlers: {
       GET: async () => {
-        const token = process.env["SQUARE_ACCESS_TOKEN"];
-        if (!token) {
+        const env = await getSquareEnv();
+        if (!env.SQUARE_DB || !env.SQUARE_TOKEN_ENCRYPTION_KEY) {
           return Response.json(
-            { error: "Square integration is not configured on the server." },
-            { status: 500 },
+            { error: "Square is not configured on the server." },
+            { status: 503, headers: { "cache-control": "no-store" } },
           );
         }
 
-        let squareResponse: Response;
+        const row = await env.SQUARE_DB.prepare(
+          `SELECT merchant_id, access_token_ciphertext, access_token_iv,
+                  refresh_token_ciphertext, refresh_token_iv, expires_at
+             FROM square_oauth_tokens
+            ORDER BY updated_at DESC
+            LIMIT 1`,
+        ).first<TokenRow>();
+
+        if (!row) {
+          return Response.json(
+            { error: "Square is not connected." },
+            { status: 503, headers: { "cache-control": "no-store" } },
+          );
+        }
+
+        const key = await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY);
+
+        let accessToken: string;
         try {
-          squareResponse = await fetch(SQUARE_CATALOG_URL, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Square-Version": SQUARE_VERSION,
-              "Content-Type": "application/json",
-            },
-          });
+          accessToken = await decryptToken(
+            key,
+            row.access_token_ciphertext,
+            row.access_token_iv,
+          );
+        } catch {
+          return Response.json(
+            { error: "Square credentials could not be read." },
+            { status: 503, headers: { "cache-control": "no-store" } },
+          );
+        }
+
+        if (isExpiring(row.expires_at)) {
+          if (!env.SQUARE_APP_ID || !env.SQUARE_APP_SECRET) {
+            return Response.json(
+              { error: "Square is not configured on the server." },
+              { status: 503, headers: { "cache-control": "no-store" } },
+            );
+          }
+          try {
+            const refreshToken = await decryptToken(
+              key,
+              row.refresh_token_ciphertext,
+              row.refresh_token_iv,
+            );
+            const res = await fetch(SQUARE_OAUTH_TOKEN_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Square-Version": SQUARE_VERSION,
+              },
+              body: JSON.stringify({
+                client_id: env.SQUARE_APP_ID,
+                client_secret: env.SQUARE_APP_SECRET,
+                grant_type: "refresh_token",
+                refresh_token: refreshToken,
+              }),
+            });
+            const payload = (await res.json().catch(() => null)) as {
+              access_token?: string;
+              refresh_token?: string;
+              expires_at?: string;
+            } | null;
+
+            if (res.ok && payload?.access_token) {
+              const access = await encryptToken(key, payload.access_token);
+              if (payload.refresh_token) {
+                const refresh = await encryptToken(key, payload.refresh_token);
+                await env.SQUARE_DB.prepare(
+                  `UPDATE square_oauth_tokens
+                      SET access_token_ciphertext = ?, access_token_iv = ?,
+                          refresh_token_ciphertext = ?, refresh_token_iv = ?,
+                          expires_at = ?, updated_at = datetime('now')
+                    WHERE merchant_id = ?`,
+                )
+                  .bind(
+                    access.ciphertext,
+                    access.iv,
+                    refresh.ciphertext,
+                    refresh.iv,
+                    payload.expires_at ?? "",
+                    row.merchant_id,
+                  )
+                  .run();
+              } else {
+                await env.SQUARE_DB.prepare(
+                  `UPDATE square_oauth_tokens
+                      SET access_token_ciphertext = ?, access_token_iv = ?,
+                          expires_at = ?, updated_at = datetime('now')
+                    WHERE merchant_id = ?`,
+                )
+                  .bind(
+                    access.ciphertext,
+                    access.iv,
+                    payload.expires_at ?? "",
+                    row.merchant_id,
+                  )
+                  .run();
+              }
+              accessToken = payload.access_token;
+            }
+          } catch {
+            // fall through and try the existing token
+          }
+        }
+
+        const objects: SquareCatalogObject[] = [];
+        let cursor: string | undefined;
+        try {
+          do {
+            const url = new URL(SQUARE_CATALOG_URL);
+            url.searchParams.set("types", "ITEM,IMAGE");
+            if (cursor) url.searchParams.set("cursor", cursor);
+
+            const res = await fetch(url.toString(), {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Square-Version": SQUARE_VERSION,
+                "Content-Type": "application/json",
+              },
+            });
+            const body = (await res.json().catch(() => null)) as {
+              objects?: SquareCatalogObject[];
+              cursor?: string;
+            } | null;
+
+            if (!res.ok) {
+              return Response.json(
+                { error: "Square returned an error." },
+                { status: 502, headers: { "cache-control": "no-store" } },
+              );
+            }
+
+            objects.push(...(body?.objects ?? []));
+            cursor = body?.cursor;
+          } while (cursor);
         } catch {
           return Response.json(
             { error: "Could not reach Square. Please try again later." },
-            { status: 502 },
+            { status: 502, headers: { "cache-control": "no-store" } },
           );
         }
 
-        const body = (await squareResponse.json().catch(() => null)) as
-          | { objects?: SquareItemObject[]; errors?: unknown }
-          | null;
-
-        if (!squareResponse.ok) {
-          return Response.json(
-            { error: "Square returned an error.", square: body ?? null },
-            { status: squareResponse.status },
-          );
+        const imageUrls = new Map<string, string>();
+        for (const obj of objects) {
+          if (obj.type === "IMAGE" && obj.image_data?.url) {
+            imageUrls.set(obj.id, obj.image_data.url);
+          }
         }
 
-        const items = (body?.objects ?? [])
+        const items = objects
           .filter((obj) => obj.type === "ITEM")
-          .map((obj) => ({
-            id: obj.id,
-            name: obj.item_data?.name ?? null,
-            description: obj.item_data?.description ?? null,
-            imageIds: obj.item_data?.image_ids ?? [],
-            variations: (obj.item_data?.variations ?? []).map((v) => ({
-              id: v.id,
-              name: v.item_variation_data?.name ?? null,
-              priceAmount: v.item_variation_data?.price_money?.amount ?? null,
-              currency: v.item_variation_data?.price_money?.currency ?? null,
-            })),
-          }));
+          .map((obj) => {
+            const imageIds = obj.item_data?.image_ids ?? [];
+            return {
+              id: obj.id,
+              name: obj.item_data?.name ?? null,
+              description: obj.item_data?.description ?? null,
+              imageIds,
+              imageUrls: imageIds
+                .map((id) => imageUrls.get(id))
+                .filter((u): u is string => Boolean(u)),
+              variations: (obj.item_data?.variations ?? []).map((v) => ({
+                id: v.id,
+                name: v.item_variation_data?.name ?? null,
+                priceAmount: v.item_variation_data?.price_money?.amount ?? null,
+                currency: v.item_variation_data?.price_money?.currency ?? null,
+              })),
+            };
+          });
 
-        return Response.json({ items });
+        return Response.json(
+          { items },
+          { headers: { "cache-control": "no-store" } },
+        );
       },
     },
   },
