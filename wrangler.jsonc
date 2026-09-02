@@ -7,6 +7,9 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "SQUARE_LOCATION_ID": "LRFYM2F3WGKG7"
+  },
   "d1_databases": [
     {
       "binding": "SQUARE_DB",
