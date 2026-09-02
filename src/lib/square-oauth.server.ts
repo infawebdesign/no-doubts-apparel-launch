@@ -26,6 +26,7 @@ type D1Result = { success: boolean };
 type D1Statement = {
   bind: (...values: unknown[]) => D1Statement;
   run: () => Promise<D1Result>;
+  first: <T = Record<string, unknown>>() => Promise<T | null>;
 };
 export type D1Database = { prepare: (query: string) => D1Statement };
 
@@ -127,7 +128,21 @@ export async function importEncryptionKey(base64Key: string): Promise<CryptoKey>
   }
   return crypto.subtle.importKey("raw", raw as BufferSource, "AES-GCM", false, [
     "encrypt",
+    "decrypt",
   ]);
+}
+
+export async function decryptToken(
+  key: CryptoKey,
+  ciphertext: string,
+  iv: string,
+): Promise<string> {
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64(iv) as BufferSource },
+    key,
+    fromBase64(ciphertext) as BufferSource,
+  );
+  return new TextDecoder().decode(decrypted);
 }
 
 export async function encryptToken(
