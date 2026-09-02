@@ -9,6 +9,31 @@ import {
 const SQUARE_CATALOG_URL = "https://connect.squareup.com/v2/catalog/list";
 const SQUARE_INVENTORY_URL =
   "https://connect.squareup.com/v2/inventory/counts/batch-retrieve";
+const PRODUCTION_PRODUCTS_URL =
+  "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/api/square/products";
+
+async function productionCatalogFallback(request: Request): Promise<Response | null> {
+  if (new URL(request.url).hostname === new URL(PRODUCTION_PRODUCTS_URL).hostname) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(PRODUCTION_PRODUCTS_URL, {
+      headers: { accept: "application/json" },
+    });
+    if (!response.ok) return null;
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    });
+  } catch {
+    return null;
+  }
+}
 
 type InventoryCount = {
   catalog_object_id?: string;
@@ -41,11 +66,14 @@ type SquareCatalogObject = {
 export const Route = createFileRoute("/api/square/products")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => {
         const env = await getSquareEnv();
         const tokenResult = await getValidSquareAccessToken(env);
 
         if (!tokenResult.ok) {
+          const fallback = await productionCatalogFallback(request);
+          if (fallback) return fallback;
+
           return Response.json(tokenResult.payload, {
             status: tokenResult.status,
             headers: { "cache-control": "no-store" },

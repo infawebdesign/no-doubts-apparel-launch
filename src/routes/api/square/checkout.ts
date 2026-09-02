@@ -12,6 +12,8 @@ const SQUARE_INVENTORY_URL =
   "https://connect.squareup.com/v2/inventory/counts/batch-retrieve";
 const SQUARE_PAYMENT_LINKS_URL =
   "https://connect.squareup.com/v2/online-checkout/payment-links";
+const PRODUCTION_CHECKOUT_URL =
+  "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/api/square/checkout";
 
 const REDIRECT_URL =
   "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/order-confirmed";
@@ -92,6 +94,33 @@ function parseCart(raw: unknown): CartLine[] | null {
   return [...merged].map(([variationId, quantity]) => ({ variationId, quantity }));
 }
 
+async function productionCheckoutFallback(
+  request: Request,
+  cart: CartLine[],
+): Promise<Response | null> {
+  if (new URL(request.url).hostname === new URL(PRODUCTION_CHECKOUT_URL).hostname) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(PRODUCTION_CHECKOUT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: cart }),
+    });
+    const payload = await response.text();
+    return new Response(payload, {
+      status: response.status,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
 type SquareVariationObject = {
   id: string;
   type?: string;
@@ -136,6 +165,9 @@ export const Route = createFileRoute("/api/square/checkout")({
         const env = await getSquareEnv();
         const locationId = env.SQUARE_LOCATION_ID;
         if (!locationId) {
+          const fallback = await productionCheckoutFallback(request, cart);
+          if (fallback) return fallback;
+
           console.error("[square-checkout] failure", {
             stage: "configuration",
             missing: "SQUARE_LOCATION_ID",
@@ -146,6 +178,9 @@ export const Route = createFileRoute("/api/square/checkout")({
 
         const tokenResult = await getValidSquareAccessToken(env);
         if (!tokenResult.ok) {
+          const fallback = await productionCheckoutFallback(request, cart);
+          if (fallback) return fallback;
+
           console.error("[square-checkout] failure", {
             stage: "configuration",
             missing: "SQUARE_OAUTH_TOKEN",
