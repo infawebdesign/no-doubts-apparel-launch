@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   formatPrice,
@@ -6,7 +7,17 @@ import {
   products,
   type Product,
 } from "@/lib/products";
+import {
+  STORE_ERROR_MESSAGE,
+  findSquareItem,
+  itemCurrency,
+  itemPriceAmount,
+  sortedVariations,
+  squareCatalogQuery,
+} from "@/lib/square-catalog";
+import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/site/ProductCard";
+
 
 export const Route = createFileRoute("/product/$slug")({
   loader: ({ params }) => {
