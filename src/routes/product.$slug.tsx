@@ -8,12 +8,12 @@ import {
   type Product,
 } from "@/lib/products";
 import {
-  STORE_ERROR_MESSAGE,
   findSquareItem,
   itemCurrency,
   itemPriceAmount,
   sortedVariations,
   squareCatalogQuery,
+  type SquareVariation,
 } from "@/lib/square-catalog";
 import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/site/ProductCard";
