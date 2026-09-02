@@ -8,12 +8,12 @@ import {
   type Product,
 } from "@/lib/products";
 import {
-  STORE_ERROR_MESSAGE,
   findSquareItem,
   itemCurrency,
   itemPriceAmount,
   sortedVariations,
   squareCatalogQuery,
+  type SquareVariation,
 } from "@/lib/square-catalog";
 import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/site/ProductCard";
@@ -55,20 +55,35 @@ function ProductPage() {
 
 function ProductDetail({ product }: { product: Product }) {
   const [activeImage, setActiveImage] = useState(0);
-  const [variationId, setVariationId] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
-  const { data, isPending, isError: queryError } = useQuery(squareCatalogQuery);
+  const { data, isPending } = useQuery(squareCatalogQuery);
   const squareItem = findSquareItem(data, product.squareName);
-  // No matching Square item (unconfigured/disconnected) reads as unavailable.
-  const isError = queryError || (!isPending && !squareItem);
-  const variations = sortedVariations(squareItem);
-  const selected = variations.find((v) => v.id === variationId) ?? null;
-  const price = selected?.priceAmount ?? itemPriceAmount(squareItem);
+  const liveVariations = sortedVariations(squareItem);
+  // When the live catalog is unreachable, fall back to the static size run
+  // (display only — purchasing still requires live Square variation IDs).
+  const liveAvailable = liveVariations.length > 0;
+  const variations: SquareVariation[] = liveAvailable
+    ? liveVariations
+    : product.sizes.map((size) => ({
+        id: "",
+        name: size,
+        priceAmount: product.priceCents,
+        currency: "CAD",
+        inventoryQuantity: null,
+        inStock: true,
+      }));
+  const selected =
+    variations.find((v) => (v.name ?? "") === selectedSize) ?? null;
+  const price =
+    selected?.priceAmount ?? itemPriceAmount(squareItem) ?? product.priceCents;
   const currency = itemCurrency(squareItem);
   const { addLine } = useCart();
   const [added, setAdded] = useState(false);
 
-  const canAdd = Boolean(squareItem && selected && selected.inStock);
+  const canAdd = Boolean(
+    liveAvailable && selected && selected.id && selected.inStock,
+  );
 
   const handleAdd = () => {
     if (!squareItem || !selected || !selected.inStock) return;
@@ -153,62 +168,52 @@ function ProductDetail({ product }: { product: Product }) {
 
         <div className="lg:sticky lg:top-28 lg:h-fit">
           <h1 className="display text-4xl sm:text-6xl">{product.name}</h1>
-          {isError ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              {STORE_ERROR_MESSAGE}
-            </p>
-          ) : (
-            <>
-              <p className="mt-4 text-xl font-semibold">
-                {isPending ? "\u2014" : `${formatPrice(price)} ${currency}`}
-              </p>
-              <p className="label mt-1 text-muted-foreground">
-                All sizes same price + HST
-              </p>
-            </>
-          )}
+          <p className="mt-4 text-xl font-semibold">
+            {isPending ? "\u2014" : `${formatPrice(price)} ${currency}`}
+          </p>
+          <p className="label mt-1 text-muted-foreground">
+            All sizes same price + HST
+          </p>
 
-          {!isError && (
-            <div className="mt-8">
-              <p className="label text-muted-foreground">Select size</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {variations.map((v) => {
-                  const active = v.id === variationId;
-                  return (
-                    <button
-                      key={v.id}
-                      type="button"
-                      disabled={!v.inStock}
-                      aria-disabled={!v.inStock}
-                      title={v.inStock ? undefined : "Sold out"}
-                      onClick={() => {
-                        setVariationId(v.id);
-                        setAdded(false);
-                      }}
-                      className={`min-w-14 border px-4 py-3 text-sm font-semibold transition-colors ${
-                        !v.inStock
-                          ? "cursor-not-allowed border-border text-muted-foreground line-through opacity-40"
-                          : active
-                            ? "border-bone bg-bone text-ink"
-                            : "border-border hover:border-bone"
-                      }`}
-                    >
-                      {v.name ?? "Size"}
-                    </button>
-                  );
-                })}
-                {isPending &&
-                  [0, 1, 2, 3].map((i) => (
-                    <span
-                      key={i}
-                      className="min-w-14 border border-border px-4 py-3 text-sm font-semibold text-muted-foreground opacity-40"
-                    >
-                      &nbsp;
-                    </span>
-                  ))}
-              </div>
+          <div className="mt-8">
+            <p className="label text-muted-foreground">Select size</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {variations.map((v) => {
+                const active = (v.name ?? "") === selectedSize;
+                return (
+                  <button
+                    key={v.id || v.name}
+                    type="button"
+                    disabled={!v.inStock}
+                    aria-disabled={!v.inStock}
+                    title={v.inStock ? undefined : "Sold out"}
+                    onClick={() => {
+                      setSelectedSize(v.name ?? "");
+                      setAdded(false);
+                    }}
+                    className={`min-w-14 border px-4 py-3 text-sm font-semibold transition-colors ${
+                      !v.inStock
+                        ? "cursor-not-allowed border-border text-muted-foreground line-through opacity-40"
+                        : active
+                          ? "border-bone bg-bone text-ink"
+                          : "border-border hover:border-bone"
+                    }`}
+                  >
+                    {v.name ?? "Size"}
+                  </button>
+                );
+              })}
+              {isPending &&
+                [0, 1, 2, 3].map((i) => (
+                  <span
+                    key={i}
+                    className="min-w-14 border border-border px-4 py-3 text-sm font-semibold text-muted-foreground opacity-40"
+                  >
+                    &nbsp;
+                  </span>
+                ))}
             </div>
-          )}
+          </div>
 
           <button
             type="button"
@@ -220,6 +225,13 @@ function ProductDetail({ product }: { product: Product }) {
           >
             {added ? "Added to bag" : "Add to bag"}
           </button>
+
+          {!isPending && !liveAvailable && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Online purchasing is temporarily unavailable. Please check back
+              shortly.
+            </p>
+          )}
 
 
           <div className="mt-10 space-y-4 border-t border-border pt-6">

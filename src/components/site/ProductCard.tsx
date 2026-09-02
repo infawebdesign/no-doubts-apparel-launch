@@ -12,7 +12,8 @@ export function ProductCard({ product }: { product: Product }) {
   const cover = product.images[0];
   const { data, isPending, isError } = useQuery(squareCatalogQuery);
   const squareItem = findSquareItem(data, product.squareName);
-  const price = itemPriceAmount(squareItem);
+  // Fall back to the static price when the live catalog is unreachable.
+  const price = itemPriceAmount(squareItem) ?? product.priceCents;
   const soldOut = !isPending && !isError && !!squareItem && !itemInStock(squareItem);
 
   return (
@@ -54,7 +55,7 @@ export function ProductCard({ product }: { product: Product }) {
           </h3>
         </div>
         <span className="shrink-0 text-sm font-semibold">
-          {isPending ? "—" : isError ? "" : formatPrice(price)}
+          {isPending ? "—" : formatPrice(price)}
         </span>
       </div>
     </Link>
