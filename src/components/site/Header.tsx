@@ -258,7 +258,8 @@ function CartDrawer({
             {submitting ? "Redirecting..." : `Checkout ${count > 0 ? `(${count})` : ""}`}
           </button>
           <p className="mt-2 text-center text-[10px] text-muted-foreground">
-            Taxes and shipping calculated at checkout.
+            $15 flat-rate shipping within Canada. Orders typically process
+            within 24–48 hours. Taxes calculated at checkout.
           </p>
         </SheetFooter>
       </SheetContent>

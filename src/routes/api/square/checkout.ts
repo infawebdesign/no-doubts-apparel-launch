@@ -234,14 +234,22 @@ export const Route = createFileRoute("/api/square/checkout")({
           return json({ error: "Square is temporarily unavailable." }, 503);
         }
 
+        // Temporary website-level restriction: 3XL stays in Square but is
+        // not sold on the storefront right now.
+        const HIDDEN_SIZES = new Set(["3XL"]);
+
         const byId = new Map(catalogObjects.map((o) => [o.id, o]));
         for (const line of cart) {
           const obj = byId.get(line.variationId);
+          const variationName = obj?.item_variation_data?.name
+            ?.trim()
+            .toUpperCase();
           if (
             !obj ||
             obj.type !== "ITEM_VARIATION" ||
             !availableAtLocation(obj, locationId) ||
-            obj.item_variation_data?.sellable === false
+            obj.item_variation_data?.sellable === false ||
+            (variationName != null && HIDDEN_SIZES.has(variationName))
           ) {
             console.error("[square-checkout] failure", {
               stage: "catalog validation",
@@ -345,6 +353,10 @@ export const Route = createFileRoute("/api/square/checkout")({
             allow_tipping: false,
             merchant_support_email: SUPPORT_EMAIL,
             redirect_url: REDIRECT_URL,
+            shipping_fee: {
+              name: "Shipping",
+              charge: { amount: 1500, currency: "CAD" },
+            },
           },
         };
 

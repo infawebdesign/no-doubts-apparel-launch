@@ -249,9 +249,10 @@ function ProductDetail({ product }: { product: Product }) {
               </p>
             </div>
             <div>
-              <h2 className="label text-bone">Shipping &amp; returns</h2>
+              <h2 className="label text-bone">Shipping</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                [Shipping and returns policy to be supplied.]
+                $15 flat-rate shipping within Canada. Orders typically process
+                within 24–48 hours. Tracking provided via Canada Post.
               </p>
             </div>
           </div>
