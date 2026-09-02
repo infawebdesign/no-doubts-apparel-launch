@@ -64,9 +64,11 @@ export const Route = createFileRoute("/api/square/products")({
       GET: async () => {
         const env = await getSquareEnv();
         if (!env.SQUARE_DB || !env.SQUARE_TOKEN_ENCRYPTION_KEY) {
+          // Not an error condition: environments without the Square bindings
+          // (e.g. local preview) simply have no catalog to serve.
           return Response.json(
-            { error: "Square is not configured on the server." },
-            { status: 503, headers: { "cache-control": "no-store" } },
+            { configured: false, items: [] },
+            { status: 200, headers: { "cache-control": "no-store" } },
           );
         }
 
@@ -80,8 +82,8 @@ export const Route = createFileRoute("/api/square/products")({
 
         if (!row) {
           return Response.json(
-            { error: "Square is not connected." },
-            { status: 503, headers: { "cache-control": "no-store" } },
+            { configured: false, items: [] },
+            { status: 200, headers: { "cache-control": "no-store" } },
           );
         }
 

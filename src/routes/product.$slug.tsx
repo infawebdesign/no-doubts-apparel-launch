@@ -57,8 +57,10 @@ function ProductDetail({ product }: { product: Product }) {
   const [activeImage, setActiveImage] = useState(0);
   const [variationId, setVariationId] = useState<string | null>(null);
 
-  const { data, isPending, isError } = useQuery(squareCatalogQuery);
+  const { data, isPending, isError: queryError } = useQuery(squareCatalogQuery);
   const squareItem = findSquareItem(data, product.squareName);
+  // No matching Square item (unconfigured/disconnected) reads as unavailable.
+  const isError = queryError || (!isPending && !squareItem);
   const variations = sortedVariations(squareItem);
   const selected = variations.find((v) => v.id === variationId) ?? null;
   const price = selected?.priceAmount ?? itemPriceAmount(squareItem);
