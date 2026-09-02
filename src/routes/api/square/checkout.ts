@@ -29,16 +29,6 @@ type SquareApiError = {
   field?: string;
 };
 
-type DebugInfo = {
-  stage: string;
-  squareStatus?: number | undefined;
-  squareCode?: string | null;
-  squareCategory?: string | null;
-  squareDetail?: string | null;
-  squareField?: string | null;
-  missing?: string;
-};
-
 function json(body: unknown, status: number) {
   return Response.json(body, {
     status,
@@ -46,8 +36,8 @@ function json(body: unknown, status: number) {
   });
 }
 
-/** TEMPORARY DIAGNOSTICS: logs + returns a credential-free debug object. */
-function squareFailure(
+/** Logs credential-free failure details to the server console. */
+function logSquareFailure(
   stage: string,
   locationId: string | undefined,
   status: number | undefined,
@@ -56,22 +46,18 @@ function squareFailure(
 ) {
   const errors = (payload as { errors?: SquareApiError[] } | null)?.errors ?? [];
   const first = errors[0] ?? {};
-  const debug: DebugInfo = {
+  console.error("[square-checkout] failure", {
     stage,
     squareStatus: status,
     squareCode: first.code ?? null,
     squareCategory: first.category ?? null,
     squareDetail: first.detail ?? null,
     squareField: first.field ?? null,
-  };
-  console.error("[square-checkout] failure", {
-    ...debug,
     hasLocationId: Boolean(locationId),
     locationId: locationId ?? null,
     allErrors: errors,
     ...extra,
   });
-  return { debug };
 }
 
 function parseCart(raw: unknown): CartLine[] | null {
@@ -155,13 +141,7 @@ export const Route = createFileRoute("/api/square/checkout")({
             missing: "SQUARE_LOCATION_ID",
             hasLocationId: false,
           });
-          return json(
-            {
-              error: "Checkout is temporarily unavailable.",
-              debug: { stage: "configuration", missing: "SQUARE_LOCATION_ID" },
-            },
-            503,
-          );
+          return json({ error: "Checkout is temporarily unavailable." }, 503);
         }
 
         const tokenResult = await getValidSquareAccessToken(env);
@@ -173,13 +153,7 @@ export const Route = createFileRoute("/api/square/checkout")({
             hasLocationId: true,
             locationId,
           });
-          return json(
-            {
-              error: "Checkout is temporarily unavailable.",
-              debug: { stage: "configuration", missing: "SQUARE_OAUTH_TOKEN" },
-            },
-            503,
-          );
+          return json({ error: "Checkout is temporarily unavailable." }, 503);
         }
         const { accessToken } = tokenResult;
 
@@ -204,25 +178,25 @@ export const Route = createFileRoute("/api/square/checkout")({
             objects?: SquareVariationObject[];
           } | null;
           if (!res.ok || !payload) {
-            const { debug } = squareFailure(
+            logSquareFailure(
               "catalog validation",
               locationId,
               res.status,
               payload,
               { requestedObjectIds: cart.map((l) => l.variationId) },
             );
-            return json({ error: "Square is temporarily unavailable.", debug }, 503);
+            return json({ error: "Square is temporarily unavailable." }, 503);
           }
           catalogObjects = payload.objects ?? [];
         } catch (error) {
-          const { debug } = squareFailure(
+          logSquareFailure(
             "catalog validation",
             locationId,
             undefined,
             null,
             { networkError: String(error) },
           );
-          return json({ error: "Square is temporarily unavailable.", debug }, 503);
+          return json({ error: "Square is temporarily unavailable." }, 503);
         }
 
         const byId = new Map(catalogObjects.map((o) => [o.id, o]));
@@ -244,13 +218,7 @@ export const Route = createFileRoute("/api/square/checkout")({
               locationId,
             });
             return json(
-              {
-                error: "One of the items in your bag is no longer available.",
-                debug: {
-                  stage: "catalog validation",
-                  squareDetail: "variation unavailable at location",
-                },
-              },
+              { error: "One of the items in your bag is no longer available." },
               409,
             );
           }
@@ -280,13 +248,8 @@ export const Route = createFileRoute("/api/square/checkout")({
             }>;
           } | null;
           if (!res.ok || !payload) {
-            const { debug } = squareFailure(
-              "inventory validation",
-              locationId,
-              res.status,
-              payload,
-            );
-            return json({ error: "Square is temporarily unavailable.", debug }, 503);
+            logSquareFailure("inventory validation", locationId, res.status, payload);
+            return json({ error: "Square is temporarily unavailable." }, 503);
           }
           const counts = new Map<string, number>();
           for (const c of payload.counts ?? []) {
@@ -321,14 +284,14 @@ export const Route = createFileRoute("/api/square/checkout")({
             }
           }
         } catch (error) {
-          const { debug } = squareFailure(
+          logSquareFailure(
             "inventory validation",
             locationId,
             undefined,
             null,
             { networkError: String(error) },
           );
-          return json({ error: "Square is temporarily unavailable.", debug }, 503);
+          return json({ error: "Square is temporarily unavailable." }, 503);
         }
 
         // 3. Create the Square-hosted checkout link.
@@ -362,13 +325,12 @@ export const Route = createFileRoute("/api/square/checkout")({
           const url = payload?.payment_link?.url;
           const orderId = payload?.payment_link?.order_id;
           if (!res.ok || !url || !orderId) {
-            const { debug } = squareFailure(
+            logSquareFailure(
               "CreatePaymentLink",
               locationId,
               res.status,
               payload,
               {
-                // Safe request body: no credentials included.
                 safeRequestBody: {
                   order: paymentLinkBody.order,
                   checkout_options: paymentLinkBody.checkout_options,
@@ -378,13 +340,13 @@ export const Route = createFileRoute("/api/square/checkout")({
               },
             );
             return json(
-              { error: "Checkout could not be started. Please try again.", debug },
+              { error: "Checkout could not be started. Please try again." },
               503,
             );
           }
           return json({ checkoutUrl: url, orderId }, 200);
         } catch (error) {
-          const { debug } = squareFailure(
+          logSquareFailure(
             "CreatePaymentLink",
             locationId,
             undefined,
@@ -397,7 +359,7 @@ export const Route = createFileRoute("/api/square/checkout")({
               },
             },
           );
-          return json({ error: "Square is temporarily unavailable.", debug }, 503);
+          return json({ error: "Square is temporarily unavailable." }, 503);
         }
       },
     },
