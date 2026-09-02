@@ -4,7 +4,6 @@ import editorialImg from "@/assets/editorial-lift.jpg";
 import { useQuery } from "@tanstack/react-query";
 import { formatPrice, products } from "@/lib/products";
 import {
-  STORE_ERROR_MESSAGE,
   findSquareItem,
   itemPriceAmount,
   squareCatalogQuery,
