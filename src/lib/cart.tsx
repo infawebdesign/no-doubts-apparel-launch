@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (l) => l.squareVariationId === line.squareVariationId,
       );
       if (existing) {
-        const nextQuantity = l.quantity + quantity;
+        const nextQuantity = existing.quantity + quantity;
         return prev
           .map((l) =>
             l.squareVariationId === line.squareVariationId
