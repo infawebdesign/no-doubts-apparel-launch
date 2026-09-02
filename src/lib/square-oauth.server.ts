@@ -128,7 +128,21 @@ export async function importEncryptionKey(base64Key: string): Promise<CryptoKey>
   }
   return crypto.subtle.importKey("raw", raw as BufferSource, "AES-GCM", false, [
     "encrypt",
+    "decrypt",
   ]);
+}
+
+export async function decryptToken(
+  key: CryptoKey,
+  ciphertext: string,
+  iv: string,
+): Promise<string> {
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64(iv) as BufferSource },
+    key,
+    fromBase64(ciphertext) as BufferSource,
+  );
+  return new TextDecoder().decode(decrypted);
 }
 
 export async function encryptToken(
