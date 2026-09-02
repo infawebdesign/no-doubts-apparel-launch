@@ -212,6 +212,54 @@ export const Route = createFileRoute("/api/square/products")({
           );
         }
 
+        // --- Inventory ---
+        const variationIds = objects
+          .filter((obj) => obj.type === "ITEM")
+          .flatMap((obj) => obj.item_data?.variations ?? [])
+          .map((v) => v.id);
+
+        const inventoryByVariation = new Map<string, number>();
+        if (variationIds.length > 0) {
+          let inventoryCursor: string | undefined;
+          do {
+            const res = await fetch(SQUARE_INVENTORY_URL, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Square-Version": SQUARE_VERSION,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                catalog_object_ids: variationIds,
+                states: ["IN_STOCK"],
+                ...(inventoryCursor ? { cursor: inventoryCursor } : {}),
+              }),
+            });
+            const body = (await res.json().catch(() => null)) as {
+              counts?: InventoryCount[];
+              cursor?: string;
+            } | null;
+
+            if (!res.ok) {
+              return Response.json(
+                { error: "Square returned an error." },
+                { status: 502, headers: { "cache-control": "no-store" } },
+              );
+            }
+
+            for (const count of body?.counts ?? []) {
+              if (count.state !== "IN_STOCK" || !count.catalog_object_id)
+                continue;
+              const qty = Number(count.quantity);
+              inventoryByVariation.set(
+                count.catalog_object_id,
+                Number.isFinite(qty) ? qty : 0,
+              );
+            }
+            inventoryCursor = body?.cursor;
+          } while (inventoryCursor);
+        }
+
         const imageUrls = new Map<string, string>();
         for (const obj of objects) {
           if (obj.type === "IMAGE" && obj.image_data?.url) {
