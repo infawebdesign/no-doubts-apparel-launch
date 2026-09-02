@@ -32,10 +32,11 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const featured = products.find((p) => p.slug === "earn-your-total");
-  const { data, isPending, isError } = useQuery(squareCatalogQuery);
-  const featuredPrice = itemPriceAmount(
-    findSquareItem(data, featured?.squareName ?? ""),
-  );
+  const { data, isPending } = useQuery(squareCatalogQuery);
+  const featuredPrice =
+    itemPriceAmount(findSquareItem(data, featured?.squareName ?? "")) ??
+    featured?.priceCents ??
+    null;
   return (
     <>
 
@@ -110,11 +111,6 @@ function Home() {
             Shop now <span aria-hidden>&rarr;</span>
           </Link>
         </div>
-        {isError && (
-          <p className="mt-6 text-sm text-muted-foreground">
-            {STORE_ERROR_MESSAGE}
-          </p>
-        )}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />

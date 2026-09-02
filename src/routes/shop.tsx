@@ -24,16 +24,13 @@ export const Route = createFileRoute("/shop")({
 });
 
 function Shop() {
-  const { isError } = useQuery(squareCatalogQuery);
+  // Keep the catalog warm; ProductCard reads live Square data with a static fallback.
+  useQuery(squareCatalogQuery);
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-16 sm:pt-32">
       <header className="border-b border-border pb-6">
         <h1 className="display text-5xl sm:text-8xl">Shop All</h1>
       </header>
-
-      {isError && (
-        <p className="mt-6 text-sm text-muted-foreground">{STORE_ERROR_MESSAGE}</p>
-      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {products.map((p) => (
