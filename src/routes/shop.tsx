@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { STORE_ERROR_MESSAGE, squareCatalogQuery } from "@/lib/square-catalog";
+import { squareCatalogQuery } from "@/lib/square-catalog";
 import { products } from "@/lib/products";
 import { ProductCard } from "@/components/site/ProductCard";
 
