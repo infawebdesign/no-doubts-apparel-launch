@@ -34,6 +34,7 @@ export type SquareEnv = {
   SQUARE_APP_ID: string | undefined;
   SQUARE_APP_SECRET: string | undefined;
   SQUARE_TOKEN_ENCRYPTION_KEY: string | undefined;
+  SQUARE_LOCATION_ID: string | undefined;
   SQUARE_DB: D1Database | undefined;
 };
 
@@ -66,6 +67,7 @@ export async function getSquareEnv(): Promise<SquareEnv> {
     SQUARE_APP_ID: pick("SQUARE_APP_ID"),
     SQUARE_APP_SECRET: pick("SQUARE_APP_SECRET"),
     SQUARE_TOKEN_ENCRYPTION_KEY: pick("SQUARE_TOKEN_ENCRYPTION_KEY"),
+    SQUARE_LOCATION_ID: pick("SQUARE_LOCATION_ID"),
     SQUARE_DB: workerEnv["SQUARE_DB"] as D1Database | undefined,
   };
 }

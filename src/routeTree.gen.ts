@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as ApiSquareCheckoutRouteImport } from './routes/api/square/checkout'
 import { Route as ApiSquareLocationsRouteImport } from './routes/api/square/locations'
 import { Route as ApiSquareProductsRouteImport } from './routes/api/square/products'
 import { Route as ApiSquareOauthCallbackRouteImport } from './routes/api/square/oauth/callback'
@@ -44,6 +45,11 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
   path: '/product/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSquareCheckoutRoute = ApiSquareCheckoutRouteImport.update({
+  id: '/api/square/checkout',
+  path: '/api/square/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSquareLocationsRoute = ApiSquareLocationsRouteImport.update({
   id: '/api/square/locations',
   path: '/api/square/locations',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/square/checkout': typeof ApiSquareCheckoutRoute
   '/api/square/locations': typeof ApiSquareLocationsRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/square/checkout': typeof ApiSquareCheckoutRoute
   '/api/square/locations': typeof ApiSquareLocationsRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/square/checkout': typeof ApiSquareCheckoutRoute
   '/api/square/locations': typeof ApiSquareLocationsRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/shop'
     | '/product/$slug'
+    | '/api/square/checkout'
     | '/api/square/locations'
     | '/api/square/products'
     | '/api/square/oauth/callback'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/shop'
     | '/product/$slug'
+    | '/api/square/checkout'
     | '/api/square/locations'
     | '/api/square/products'
     | '/api/square/oauth/callback'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/shop'
     | '/product/$slug'
+    | '/api/square/checkout'
     | '/api/square/locations'
     | '/api/square/products'
     | '/api/square/oauth/callback'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   ShopRoute: typeof ShopRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  ApiSquareCheckoutRoute: typeof ApiSquareCheckoutRoute
   ApiSquareLocationsRoute: typeof ApiSquareLocationsRoute
   ApiSquareProductsRoute: typeof ApiSquareProductsRoute
   ApiSquareOauthCallbackRoute: typeof ApiSquareOauthCallbackRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/square/checkout': {
+      id: '/api/square/checkout'
+      path: '/api/square/checkout'
+      fullPath: '/api/square/checkout'
+      preLoaderRoute: typeof ApiSquareCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/square/locations': {
       id: '/api/square/locations'
       path: '/api/square/locations'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   ShopRoute: ShopRoute,
   ProductSlugRoute: ProductSlugRoute,
+  ApiSquareCheckoutRoute: ApiSquareCheckoutRoute,
   ApiSquareLocationsRoute: ApiSquareLocationsRoute,
   ApiSquareProductsRoute: ApiSquareProductsRoute,
   ApiSquareOauthCallbackRoute: ApiSquareOauthCallbackRoute,
