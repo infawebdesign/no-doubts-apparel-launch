@@ -10,7 +10,15 @@ import {
 } from "@/lib/square-oauth.server";
 
 const SQUARE_CATALOG_URL = "https://connect.squareup.com/v2/catalog/list";
+const SQUARE_INVENTORY_URL =
+  "https://connect.squareup.com/v2/inventory/counts/batch-retrieve";
 const REFRESH_BUFFER_MS = 24 * 60 * 60 * 1000; // refresh 24h before expiry
+
+type InventoryCount = {
+  catalog_object_id?: string;
+  state?: string;
+  quantity?: string | number;
+};
 
 type SquareMoney = { amount?: number; currency?: string };
 
