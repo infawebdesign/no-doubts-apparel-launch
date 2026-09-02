@@ -16,7 +16,6 @@ import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as ApiSquareCheckoutRouteImport } from './routes/api/square/checkout'
-import { Route as ApiSquareLocationsRouteImport } from './routes/api/square/locations'
 import { Route as ApiSquareProductsRouteImport } from './routes/api/square/products'
 import { Route as ApiSquareOauthCallbackRouteImport } from './routes/api/square/oauth/callback'
 import { Route as ApiSquareOauthStartRouteImport } from './routes/api/square/oauth/start'
@@ -56,11 +55,6 @@ const ApiSquareCheckoutRoute = ApiSquareCheckoutRouteImport.update({
   path: '/api/square/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSquareLocationsRoute = ApiSquareLocationsRouteImport.update({
-  id: '/api/square/locations',
-  path: '/api/square/locations',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiSquareProductsRoute = ApiSquareProductsRouteImport.update({
   id: '/api/square/products',
   path: '/api/square/products',
@@ -85,7 +79,6 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/checkout': typeof ApiSquareCheckoutRoute
-  '/api/square/locations': typeof ApiSquareLocationsRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
   '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
@@ -98,7 +91,6 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/checkout': typeof ApiSquareCheckoutRoute
-  '/api/square/locations': typeof ApiSquareLocationsRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
   '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
@@ -112,7 +104,6 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/checkout': typeof ApiSquareCheckoutRoute
-  '/api/square/locations': typeof ApiSquareLocationsRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
   '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
@@ -127,7 +118,6 @@ export interface FileRouteTypes {
     | '/shop'
     | '/product/$slug'
     | '/api/square/checkout'
-    | '/api/square/locations'
     | '/api/square/products'
     | '/api/square/oauth/callback'
     | '/api/square/oauth/start'
@@ -140,7 +130,6 @@ export interface FileRouteTypes {
     | '/shop'
     | '/product/$slug'
     | '/api/square/checkout'
-    | '/api/square/locations'
     | '/api/square/products'
     | '/api/square/oauth/callback'
     | '/api/square/oauth/start'
@@ -153,7 +142,6 @@ export interface FileRouteTypes {
     | '/shop'
     | '/product/$slug'
     | '/api/square/checkout'
-    | '/api/square/locations'
     | '/api/square/products'
     | '/api/square/oauth/callback'
     | '/api/square/oauth/start'
@@ -167,7 +155,6 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   ProductSlugRoute: typeof ProductSlugRoute
   ApiSquareCheckoutRoute: typeof ApiSquareCheckoutRoute
-  ApiSquareLocationsRoute: typeof ApiSquareLocationsRoute
   ApiSquareProductsRoute: typeof ApiSquareProductsRoute
   ApiSquareOauthCallbackRoute: typeof ApiSquareOauthCallbackRoute
   ApiSquareOauthStartRoute: typeof ApiSquareOauthStartRoute
@@ -224,13 +211,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSquareCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/square/locations': {
-      id: '/api/square/locations'
-      path: '/api/square/locations'
-      fullPath: '/api/square/locations'
-      preLoaderRoute: typeof ApiSquareLocationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/square/products': {
       id: '/api/square/products'
       path: '/api/square/products'
@@ -263,7 +243,6 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   ProductSlugRoute: ProductSlugRoute,
   ApiSquareCheckoutRoute: ApiSquareCheckoutRoute,
-  ApiSquareLocationsRoute: ApiSquareLocationsRoute,
   ApiSquareProductsRoute: ApiSquareProductsRoute,
   ApiSquareOauthCallbackRoute: ApiSquareOauthCallbackRoute,
   ApiSquareOauthStartRoute: ApiSquareOauthStartRoute,
