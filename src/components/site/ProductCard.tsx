@@ -1,8 +1,19 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { accentClass, formatPrice, type Product } from "@/lib/products";
+import {
+  findSquareItem,
+  itemInStock,
+  itemPriceAmount,
+  squareCatalogQuery,
+} from "@/lib/square-catalog";
 
 export function ProductCard({ product }: { product: Product }) {
   const cover = product.images[0];
+  const { data, isPending, isError } = useQuery(squareCatalogQuery);
+  const squareItem = findSquareItem(data, product.squareName);
+  const price = itemPriceAmount(squareItem);
+  const soldOut = !isPending && !isError && !!squareItem && !itemInStock(squareItem);
 
   return (
     <Link
@@ -33,7 +44,7 @@ export function ProductCard({ product }: { product: Product }) {
         <span
           className={`label absolute top-3 left-3 px-2 py-1 ${accentClass[product.colorKey]}`}
         >
-          {product.status === "available" ? "Available" : "Coming soon"}
+          {soldOut ? "Sold out" : "Available"}
         </span>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-4">
@@ -43,7 +54,7 @@ export function ProductCard({ product }: { product: Product }) {
           </h3>
         </div>
         <span className="shrink-0 text-sm font-semibold">
-          {formatPrice(product.priceCents)}
+          {isPending ? "—" : isError ? "" : formatPrice(price)}
         </span>
       </div>
     </Link>
