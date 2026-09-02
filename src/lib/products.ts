@@ -43,8 +43,8 @@ export const products: Product[] = [
       { url: tigerTee, alt: "On The Prowl Tee — Earn Your Total, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ]
-,  },
+    ],
+  },
   {
     id: "nd-snake",
     slug: "hit-the-standard",
@@ -59,8 +59,8 @@ export const products: Product[] = [
       { url: "/snake-tee-front.png", alt: "Strike Tee — Hit The Standard, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ]
-,  },
+    ],
+  },
   {
     id: "nd-script",
     slug: "varsity",
@@ -75,8 +75,8 @@ export const products: Product[] = [
       { url: scriptTee, alt: "Varsity Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ]
-,  },
+    ],
+  },
   {
     id: "nd-wordmark",
     slug: "og",
@@ -91,8 +91,8 @@ export const products: Product[] = [
       { url: ogTee, alt: "OG No Doubts Basic Tee, front print" },
       { url: null, alt: "Additional photography coming soon" },
       { url: null, alt: "Additional photography coming soon" },
-    ]
-,  },
+    ],
+  },
 ];
 
 export const getProduct = (slug: string) =>
