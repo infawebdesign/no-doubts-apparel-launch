@@ -6,5 +6,12 @@
   "main": "@tanstack/react-start/server-entry",
   "observability": {
     "enabled": true
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "SQUARE_DB",
+      "database_name": "no-doubts-square",
+      "database_id": "2d0499df-d243-4719-8a3b-3b28890071d7"
+    }
+  ]
 }
