@@ -172,3 +172,135 @@ export function htmlResponse(
     headers: { "content-type": "text/html; charset=utf-8", ...extraHeaders },
   });
 }
+
+type TokenRow = {
+  merchant_id: string;
+  access_token_ciphertext: string;
+  access_token_iv: string;
+  refresh_token_ciphertext: string;
+  refresh_token_iv: string;
+  expires_at: string | null;
+};
+
+const REFRESH_BUFFER_MS = 24 * 60 * 60 * 1000; // refresh 24h before expiry
+
+function isExpiring(expiresAt: string | null): boolean {
+  if (!expiresAt) return true;
+  const ts = Date.parse(expiresAt);
+  if (Number.isNaN(ts)) return true;
+  return ts - Date.now() <= REFRESH_BUFFER_MS;
+}
+
+export type SquareTokenResult =
+  | { ok: true; accessToken: string; merchantId: string }
+  | { ok: false; status: number; payload: Record<string, unknown> };
+
+/**
+ * Load, decrypt, and (if needed) refresh the stored Square OAuth access token.
+ * Keeps all secrets server-side. Returns a structured result so callers can
+ * build their own Response.
+ */
+export async function getValidSquareAccessToken(
+  env: SquareEnv,
+): Promise<SquareTokenResult> {
+  if (!env.SQUARE_DB || !env.SQUARE_TOKEN_ENCRYPTION_KEY) {
+    return { ok: false, status: 200, payload: { configured: false, items: [] } };
+  }
+
+  const row = await env.SQUARE_DB.prepare(
+    `SELECT merchant_id, access_token_ciphertext, access_token_iv,
+            refresh_token_ciphertext, refresh_token_iv, expires_at
+       FROM square_oauth_tokens
+      ORDER BY updated_at DESC
+      LIMIT 1`,
+  ).first<TokenRow>();
+
+  if (!row) {
+    return { ok: false, status: 200, payload: { configured: false, items: [] } };
+  }
+
+  const key = await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY);
+
+  let accessToken: string;
+  try {
+    accessToken = await decryptToken(key, row.access_token_ciphertext, row.access_token_iv);
+  } catch {
+    return {
+      ok: false,
+      status: 503,
+      payload: { error: "Square credentials could not be read." },
+    };
+  }
+
+  if (isExpiring(row.expires_at)) {
+    if (!env.SQUARE_APP_ID || !env.SQUARE_APP_SECRET) {
+      return {
+        ok: false,
+        status: 503,
+        payload: { error: "Square is not configured on the server." },
+      };
+    }
+    try {
+      const refreshToken = await decryptToken(
+        key,
+        row.refresh_token_ciphertext,
+        row.refresh_token_iv,
+      );
+      const res = await fetch(SQUARE_OAUTH_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Square-Version": SQUARE_VERSION,
+        },
+        body: JSON.stringify({
+          client_id: env.SQUARE_APP_ID,
+          client_secret: env.SQUARE_APP_SECRET,
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+        }),
+      });
+      const payload = (await res.json().catch(() => null)) as {
+        access_token?: string;
+        refresh_token?: string;
+        expires_at?: string;
+      } | null;
+
+      if (res.ok && payload?.access_token) {
+        const access = await encryptToken(key, payload.access_token);
+        if (payload.refresh_token) {
+          const refresh = await encryptToken(key, payload.refresh_token);
+          await env.SQUARE_DB.prepare(
+            `UPDATE square_oauth_tokens
+                SET access_token_ciphertext = ?, access_token_iv = ?,
+                    refresh_token_ciphertext = ?, refresh_token_iv = ?,
+                    expires_at = ?, updated_at = datetime('now')
+              WHERE merchant_id = ?`,
+          )
+            .bind(
+              access.ciphertext,
+              access.iv,
+              refresh.ciphertext,
+              refresh.iv,
+              payload.expires_at ?? "",
+              row.merchant_id,
+            )
+            .run();
+        } else {
+          await env.SQUARE_DB.prepare(
+            `UPDATE square_oauth_tokens
+                SET access_token_ciphertext = ?, access_token_iv = ?,
+                    expires_at = ?, updated_at = datetime('now')
+              WHERE merchant_id = ?`,
+          )
+            .bind(access.ciphertext, access.iv, payload.expires_at ?? "", row.merchant_id)
+            .run();
+        }
+        accessToken = payload.access_token;
+      }
+    } catch {
+      // fall through and try the existing token
+    }
+  }
+
+  return { ok: true, accessToken, merchantId: row.merchant_id };
+}
