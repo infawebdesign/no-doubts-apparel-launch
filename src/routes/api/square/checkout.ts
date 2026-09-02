@@ -353,10 +353,6 @@ export const Route = createFileRoute("/api/square/checkout")({
             allow_tipping: false,
             merchant_support_email: SUPPORT_EMAIL,
             redirect_url: REDIRECT_URL,
-            shipping_fee: {
-              name: "Shipping",
-              charge: { amount: 1500, currency: "CAD" },
-            },
           },
         };
 
