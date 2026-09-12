@@ -8,6 +8,8 @@
 - [x] Add 60/40 blend and unisex sizing details
 - [x] Add final product descriptions
 - [x] Replace OG tee product image with the upscaled version the client uploaded
+- [x] Add Shipping, Returns & Order Policy page from Francesco's email
+- [x] Update contact email and footer shipping info
 
 ## Pending
 - [ ] Update About page with the About Us content the client sent separately
