@@ -17,7 +17,7 @@ const PRODUCTION_CHECKOUT_URL =
 
 const REDIRECT_URL =
   "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/order-confirmed";
-const SUPPORT_EMAIL = "nodoubtsapparel.ca@gmail.com";
+const SUPPORT_EMAIL = "nodoubts.ca@gmail.com";
 
 const MAX_QTY_PER_LINE = 10;
 const MAX_LINES = 20;
