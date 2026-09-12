@@ -258,8 +258,9 @@ function CartDrawer({
             {submitting ? "Redirecting..." : `Checkout ${count > 0 ? `(${count})` : ""}`}
           </button>
           <p className="mt-2 text-center text-[10px] text-muted-foreground">
-            $15 flat-rate shipping within Canada. Orders typically process
-            within 24–48 hours. Taxes calculated at checkout.
+            Canada-only shipping. Regular Parcel $15 / Xpresspost $20. Orders
+            typically process within 1–2 business days. Taxes calculated at
+            checkout.
           </p>
         </SheetFooter>
       </SheetContent>

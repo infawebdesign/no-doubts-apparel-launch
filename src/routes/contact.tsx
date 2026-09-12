@@ -87,10 +87,10 @@ function Contact() {
           <div className="border border-border p-6">
             <h2 className="display text-xl text-muted-foreground">Email</h2>
             <a
-              href="mailto:nodoubtsapparel.ca@gmail.com"
+              href="mailto:nodoubts.ca@gmail.com"
               className="mt-3 inline-block text-sm text-bone transition-colors hover:text-bone/80"
             >
-              nodoubtsapparel.ca@gmail.com
+              nodoubts.ca@gmail.com
             </a>
             <a
               href="https://www.instagram.com/nodoubts.apparel?utm_source=qr"
@@ -118,9 +118,15 @@ function Contact() {
           <div className="border border-border p-6">
             <h2 className="display text-xl text-muted-foreground">Orders</h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              Orders and payments will be processed through Square once checkout
-              is connected.
+              Orders are processed within 1–2 business days and shipped via
+              Canada Post. Tracking is emailed once your order ships.
             </p>
+            <Link
+              to="/shipping-returns"
+              className="mt-3 inline-block text-sm text-bone transition-colors hover:text-bone/80"
+            >
+              Shipping &amp; Returns
+            </Link>
           </div>
         </aside>
       </div>
