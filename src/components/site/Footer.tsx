@@ -26,11 +26,18 @@ export function Footer() {
           </div>
           <div className="space-y-3">
             <p className="label text-muted-foreground">Info</p>
+            <Link
+              to="/shipping-returns"
+              className="block text-sm hover:text-bone"
+            >
+              Shipping &amp; Returns
+            </Link>
             <p className="text-sm text-muted-foreground">
-              $15 flat-rate shipping within Canada
+              Canada-only shipping
             </p>
-            <p className="text-sm text-muted-foreground">[Returns TBC]</p>
-            <p className="text-sm text-muted-foreground">[Size guide TBC]</p>
+            <p className="text-sm text-muted-foreground">
+              Regular Parcel $15 / Xpresspost $20
+            </p>
           </div>
         </div>
       </div>
