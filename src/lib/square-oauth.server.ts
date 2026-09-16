@@ -1,10 +1,11 @@
+import { squareSettings } from "./square-config.server.ts";
+
 /**
  * Server-only helpers for the Square OAuth flow.
  * Never import this from client code.
  */
 
-export const SQUARE_OAUTH_AUTHORIZE_URL =
-  "https://connect.squareup.com/oauth2/authorize";
+export const SQUARE_OAUTH_AUTHORIZE_URL = "https://connect.squareup.com/oauth2/authorize";
 export const SQUARE_OAUTH_TOKEN_URL = "https://connect.squareup.com/oauth2/token";
 export const SQUARE_VERSION = "2026-08-19";
 export const SQUARE_REDIRECT_URI =
@@ -17,12 +18,13 @@ export const SQUARE_SCOPES = [
   "ORDERS_READ",
   "ORDERS_WRITE",
   "PAYMENTS_WRITE",
+  "PAYMENTS_READ",
 ] as const;
 
 export const STATE_COOKIE = "sq_oauth_state";
 export const STATE_COOKIE_MAX_AGE = 600; // 10 minutes
 
-type D1Result = { success: boolean };
+type D1Result = { success: boolean; meta?: { changes?: number } };
 type D1Statement = {
   bind: (...values: unknown[]) => D1Statement;
   run: () => Promise<D1Result>;
@@ -36,6 +38,9 @@ export type SquareEnv = {
   SQUARE_TOKEN_ENCRYPTION_KEY: string | undefined;
   SQUARE_LOCATION_ID: string | undefined;
   SQUARE_DB: D1Database | undefined;
+  SQUARE_MERCHANT_ID?: string | undefined;
+  SQUARE_ENVIRONMENT?: string | undefined;
+  PUBLIC_SITE_URL?: string | undefined;
 };
 
 /**
@@ -55,7 +60,6 @@ export async function getSquareEnv(): Promise<SquareEnv> {
     workerEnv = {};
   }
 
-
   const pick = (name: string): string | undefined => {
     const fromWorker = workerEnv[name];
     if (typeof fromWorker === "string" && fromWorker.length > 0) return fromWorker;
@@ -68,6 +72,9 @@ export async function getSquareEnv(): Promise<SquareEnv> {
     SQUARE_APP_SECRET: pick("SQUARE_APP_SECRET"),
     SQUARE_TOKEN_ENCRYPTION_KEY: pick("SQUARE_TOKEN_ENCRYPTION_KEY"),
     SQUARE_LOCATION_ID: pick("SQUARE_LOCATION_ID"),
+    SQUARE_MERCHANT_ID: pick("SQUARE_MERCHANT_ID"),
+    SQUARE_ENVIRONMENT: pick("SQUARE_ENVIRONMENT"),
+    PUBLIC_SITE_URL: pick("PUBLIC_SITE_URL"),
     SQUARE_DB: workerEnv["SQUARE_DB"] as D1Database | undefined,
   };
 }
@@ -79,7 +86,11 @@ export function readCookie(request: Request, name: string): string | null {
     const idx = part.indexOf("=");
     if (idx === -1) continue;
     if (part.slice(0, idx).trim() === name) {
-      return decodeURIComponent(part.slice(idx + 1).trim());
+      try {
+        return decodeURIComponent(part.slice(idx + 1).trim());
+      } catch {
+        return null;
+      }
     }
   }
   return null;
@@ -166,8 +177,7 @@ export function htmlResponse(
   status: number,
   extraHeaders: Record<string, string> = {},
 ): Response {
-  const esc = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const body = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>${esc(title)}</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0b0b;color:#f5f5f5;font-family:ui-sans-serif,system-ui,sans-serif;padding:24px}main{max-width:34rem;text-align:center}h1{font-size:1.25rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .75rem}p{margin:0;color:#a3a3a3;line-height:1.6}</style></head><body><main><h1>${esc(title)}</h1><p>${esc(message)}</p></main></body></html>`;
   return new Response(body, {
     status,
@@ -202,23 +212,24 @@ export type SquareTokenResult =
  * Keeps all secrets server-side. Returns a structured result so callers can
  * build their own Response.
  */
-export async function getValidSquareAccessToken(
-  env: SquareEnv,
-): Promise<SquareTokenResult> {
+export async function getValidSquareAccessToken(env: SquareEnv): Promise<SquareTokenResult> {
+  const settings = squareSettings(env);
   if (!env.SQUARE_DB || !env.SQUARE_TOKEN_ENCRYPTION_KEY) {
-    return { ok: false, status: 200, payload: { configured: false, items: [] } };
+    return { ok: false, status: 503, payload: { error: "Square is not configured." } };
   }
 
-  const row = await env.SQUARE_DB.prepare(
+  let row = await env.SQUARE_DB.prepare(
     `SELECT merchant_id, access_token_ciphertext, access_token_iv,
             refresh_token_ciphertext, refresh_token_iv, expires_at
        FROM square_oauth_tokens
-      ORDER BY updated_at DESC
+      WHERE merchant_id = ?
       LIMIT 1`,
-  ).first<TokenRow>();
+  )
+    .bind(settings.merchantId)
+    .first<TokenRow>();
 
   if (!row) {
-    return { ok: false, status: 200, payload: { configured: false, items: [] } };
+    return { ok: false, status: 503, payload: { error: "Square is not configured." } };
   }
 
   const key = await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY);
@@ -242,14 +253,60 @@ export async function getValidSquareAccessToken(
         payload: { error: "Square is not configured on the server." },
       };
     }
+    const owner = crypto.randomUUID();
+    const now = Date.now();
+    await env.SQUARE_DB.prepare(
+      `INSERT INTO square_refresh_locks (merchant_id, owner, expires_at)
+      VALUES (?, ?, ?) ON CONFLICT(merchant_id) DO UPDATE SET owner = excluded.owner,
+      expires_at = excluded.expires_at WHERE square_refresh_locks.expires_at < ?`,
+    )
+      .bind(settings.merchantId, owner, now + 60_000, now)
+      .run();
+    const lock = await env.SQUARE_DB.prepare(
+      "SELECT owner FROM square_refresh_locks WHERE merchant_id = ?",
+    )
+      .bind(settings.merchantId)
+      .first<{ owner: string }>();
+    if (lock?.owner !== owner) {
+      if (Date.parse(row.expires_at ?? "") > now + 60_000)
+        return { ok: true, accessToken, merchantId: row.merchant_id };
+      return {
+        ok: false,
+        status: 503,
+        payload: { error: "Square connection is refreshing. Please try again." },
+      };
+    }
     try {
+      // A caller may have read an expired row while another request refreshed it.
+      // Re-read after acquiring the lease so we never refresh with a stale token.
+      const current = await env.SQUARE_DB.prepare(
+        `SELECT merchant_id, access_token_ciphertext, access_token_iv,
+                refresh_token_ciphertext, refresh_token_iv, expires_at
+           FROM square_oauth_tokens WHERE merchant_id = ? LIMIT 1`,
+      )
+        .bind(settings.merchantId)
+        .first<TokenRow>();
+      if (!current) {
+        return { ok: false, status: 503, payload: { error: "Square is not configured." } };
+      }
+      if (!isExpiring(current.expires_at)) {
+        accessToken = await decryptToken(
+          key,
+          current.access_token_ciphertext,
+          current.access_token_iv,
+        );
+        return { ok: true, accessToken, merchantId: current.merchant_id };
+      }
+      row = current;
       const refreshToken = await decryptToken(
         key,
         row.refresh_token_ciphertext,
         row.refresh_token_iv,
       );
-      const res = await fetch(SQUARE_OAUTH_TOKEN_URL, {
+      const res = await fetch(`${settings.api}/oauth2/token`, {
         method: "POST",
+        signal: AbortSignal.timeout(12_000),
+        redirect: "error",
         headers: {
           "Content-Type": "application/json",
           "Square-Version": SQUARE_VERSION,
@@ -267,6 +324,16 @@ export async function getValidSquareAccessToken(
         expires_at?: string;
       } | null;
 
+      if (
+        !res.ok ||
+        !payload?.access_token ||
+        !payload.expires_at ||
+        !Number.isFinite(Date.parse(payload.expires_at)) ||
+        Date.parse(payload.expires_at) <= Date.now()
+      ) {
+        console.error("[square] token refresh failed", { status: res.status });
+        return { ok: false, status: 503, payload: { error: "Square connection needs attention." } };
+      }
       if (res.ok && payload?.access_token) {
         const access = await encryptToken(key, payload.access_token);
         if (payload.refresh_token) {
@@ -300,7 +367,18 @@ export async function getValidSquareAccessToken(
         accessToken = payload.access_token;
       }
     } catch {
-      // fall through and try the existing token
+      console.error("[square] token refresh unavailable");
+      return {
+        ok: false,
+        status: 503,
+        payload: { error: "Square connection is temporarily unavailable." },
+      };
+    } finally {
+      await env.SQUARE_DB.prepare(
+        "DELETE FROM square_refresh_locks WHERE merchant_id = ? AND owner = ?",
+      )
+        .bind(settings.merchantId, owner)
+        .run();
     }
   }
 

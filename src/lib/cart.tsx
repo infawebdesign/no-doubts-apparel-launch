@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { MAX_QTY_PER_LINE, parseCart, type PaymentLine } from "./payment-contract";
 
 /**
  * A cart line is keyed on the Square variation id, which is the only value
@@ -35,6 +36,7 @@ type CartContextValue = {
   addLine: (line: Omit<CartLine, "quantity"> & { quantity?: number }) => void;
   removeLine: (squareVariationId: string) => void;
   clear: () => void;
+  clearIfMatches: (paid: PaymentLine[]) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -42,35 +44,55 @@ const STORAGE_KEY = "nd-cart-v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setLines(parsed as CartLine[]);
+        if (Array.isArray(parsed) && parsed.length <= 20)
+          setLines(
+            parsed.filter(
+              (line): line is CartLine =>
+                line &&
+                typeof line.squareVariationId === "string" &&
+                typeof line.squareItemId === "string" &&
+                typeof line.name === "string" &&
+                typeof line.slug === "string" &&
+                typeof line.size === "string" &&
+                Number.isInteger(line.quantity) &&
+                line.quantity > 0 &&
+                line.quantity <= MAX_QTY_PER_LINE &&
+                (line.priceAmount === null ||
+                  (Number.isSafeInteger(line.priceAmount) && line.priceAmount > 0)) &&
+                line.currency === "CAD" &&
+                (line.imageUrl === null || typeof line.imageUrl === "string") &&
+                typeof line.imageAlt === "string",
+            ),
+          );
       }
     } catch {
       // ignore unreadable storage
     }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
     } catch {
       // ignore storage failures
     }
-  }, [lines]);
+  }, [lines, hydrated]);
 
   const addLine = useCallback<CartContextValue["addLine"]>((line) => {
     const quantity = line.quantity ?? 1;
     setLines((prev) => {
-      const existing = prev.find(
-        (l) => l.squareVariationId === line.squareVariationId,
-      );
+      const existing = prev.find((l) => l.squareVariationId === line.squareVariationId);
       if (existing) {
-        const nextQuantity = existing.quantity + quantity;
+        const nextQuantity = Math.min(MAX_QTY_PER_LINE, existing.quantity + quantity);
         return prev
           .map((l) =>
             l.squareVariationId === line.squareVariationId
@@ -84,17 +106,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .filter((l) => l.quantity > 0);
       }
       if (quantity <= 0) return prev;
-      return [...prev, { ...line, quantity }];
+      if (prev.length >= 20) return prev;
+      return [...prev, { ...line, quantity: Math.min(MAX_QTY_PER_LINE, quantity) }];
     });
   }, []);
 
   const removeLine = useCallback((squareVariationId: string) => {
-    setLines((prev) =>
-      prev.filter((l) => l.squareVariationId !== squareVariationId),
-    );
+    setLines((prev) => prev.filter((l) => l.squareVariationId !== squareVariationId));
   }, []);
 
   const clear = useCallback(() => setLines([]), []);
+  const clearIfMatches = useCallback((paid: PaymentLine[]) => {
+    setLines((current) => {
+      const cart = parseCart({
+        items: current.map((line) => ({
+          variationId: line.squareVariationId,
+          quantity: line.quantity,
+        })),
+      });
+      return JSON.stringify(cart) === JSON.stringify(parseCart({ items: paid })) ? [] : current;
+    });
+  }, []);
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -103,8 +135,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addLine,
       removeLine,
       clear,
+      clearIfMatches,
     }),
-    [lines, addLine, removeLine, clear],
+    [lines, addLine, removeLine, clear, clearIfMatches],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

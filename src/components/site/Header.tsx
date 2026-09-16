@@ -1,15 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { prepareCheckout } from "@/lib/checkout-attempt";
+import { MAX_QTY_PER_LINE, squareCheckoutUrl } from "@/lib/payment-contract";
 import { Menu, X, ShoppingBag, Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 
 const nav = [
   { to: "/shop", label: "Shop" },
@@ -50,7 +46,9 @@ export function Header() {
             className="relative text-bone/80 transition-colors hover:text-bone"
           >
             <ShoppingBag className="size-5" />
-            <span className="label absolute -top-1 -right-2 text-[9px] tracking-normal">{count}</span>
+            <span className="label absolute -top-1 -right-2 text-[9px] tracking-normal">
+              {count}
+            </span>
           </button>
           <button
             type="button"
@@ -83,21 +81,13 @@ export function Header() {
   );
 }
 
-function CartDrawer({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
+function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { lines, count, removeLine, addLine } = useCart();
   const [submitting, setSubmitting] = useState(false);
+  const checkoutBusy = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
-  const subtotal = lines.reduce(
-    (sum, line) => sum + (line.priceAmount ?? 0) * line.quantity,
-    0,
-  );
+  const subtotal = lines.reduce((sum, line) => sum + (line.priceAmount ?? 0) * line.quantity, 0);
 
   const canCheckout =
     !submitting &&
@@ -105,17 +95,18 @@ function CartDrawer({
     lines.every((line) => line.squareVariationId && line.quantity > 0);
 
   const handleCheckout = async () => {
-    if (!canCheckout) return;
+    if (!canCheckout || checkoutBusy.current) return;
+    checkoutBusy.current = true;
     setError(null);
     setSubmitting(true);
 
     try {
-      const payload = {
-        items: lines.map((line) => ({
-          variationId: line.squareVariationId,
-          quantity: line.quantity,
-        })),
-      };
+      const items = lines.map((line) => ({
+        variationId: line.squareVariationId,
+        quantity: line.quantity,
+      }));
+      const attempt = await prepareCheckout(items);
+      const payload = { items, attemptId: attempt.attemptId };
 
       const res = await fetch("/api/square/checkout", {
         method: "POST",
@@ -128,14 +119,19 @@ function CartDrawer({
         error?: string;
       };
 
-      if (!res.ok || !data.checkoutUrl) {
+      if (!res.ok || !squareCheckoutUrl(data.checkoutUrl)) {
         throw new Error(data.error || "Checkout failed");
       }
 
       window.location.href = data.checkoutUrl;
-    } catch {
-      setError("We couldn't start checkout. Please try again.");
+    } catch (failure) {
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "We couldn't start checkout. Please try again.",
+      );
       setSubmitting(false);
+      checkoutBusy.current = false;
     }
   };
 
@@ -200,6 +196,7 @@ function CartDrawer({
                       <button
                         type="button"
                         aria-label="Increase quantity"
+                        disabled={line.quantity >= MAX_QTY_PER_LINE || submitting}
                         onClick={() =>
                           addLine({
                             squareItemId: line.squareItemId,
@@ -244,9 +241,7 @@ function CartDrawer({
             <span className="label text-muted-foreground">Subtotal</span>
             <span className="display text-xl text-bone">{formatPrice(subtotal)}</span>
           </div>
-          {error && (
-            <p className="mb-3 text-sm text-red-400">{error}</p>
-          )}
+          {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
           <button
             type="button"
             disabled={!canCheckout}
@@ -258,9 +253,8 @@ function CartDrawer({
             {submitting ? "Redirecting..." : `Checkout ${count > 0 ? `(${count})` : ""}`}
           </button>
           <p className="mt-2 text-center text-[10px] text-muted-foreground">
-            Canada-only shipping. Regular Parcel $15 / Xpresspost $20. Orders
-            typically process within 1–2 business days. Taxes calculated at
-            checkout.
+            Canada-only shipping. Regular Parcel $15 / Xpresspost $20. Orders typically process
+            within 1–2 business days. Taxes calculated at checkout.
           </p>
         </SheetFooter>
       </SheetContent>
