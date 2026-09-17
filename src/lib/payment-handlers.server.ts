@@ -51,8 +51,10 @@ async function rateLimit(request: Request, env: SquareEnv, purpose: string, limi
 
 async function access(env: SquareEnv) {
   const result = await getValidSquareAccessToken(env);
-  if (!result.ok)
+  if (!result.ok) {
+    console.error("[square] credential check failed", { reason: result.payload["error"] });
     throw new PaymentError(503, "Square is temporarily unavailable. Please try again.");
+  }
   await assertMerchantLocation(env, result.accessToken);
   return result.accessToken;
 }

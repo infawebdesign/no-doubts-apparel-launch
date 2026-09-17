@@ -19,6 +19,7 @@ import {
 import { parseCart, squareCheckoutUrl } from "../src/lib/payment-contract.ts";
 import { checkoutAttempt } from "../src/lib/checkout-attempt.ts";
 import type { CatalogObject } from "../src/lib/square-store.server.ts";
+import { squareJson, PaymentError } from "../src/lib/square-config.server.ts";
 
 let sql: DatabaseSync;
 let env: SquareEnv;
@@ -483,4 +484,15 @@ test("redirect URLs are limited to exact Square HTTPS hosts", () => {
     "https://square.link:999/a",
   ])
     assert.equal(squareCheckoutUrl(value), false);
+});
+
+test("Square API redirects are not followed with merchant credentials", async () => {
+  let requests = 0;
+  globalThis.fetch = async (_input, init) => {
+    requests += 1;
+    assert.equal(init?.redirect, "manual");
+    return new Response(null, { status: 302, headers: { location: "https://attacker.example" } });
+  };
+  await assert.rejects(squareJson(env, "test-token", "/v2/locations/location"), PaymentError);
+  assert.equal(requests, 1);
 });

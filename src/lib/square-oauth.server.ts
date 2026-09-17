@@ -306,7 +306,7 @@ export async function getValidSquareAccessToken(env: SquareEnv): Promise<SquareT
       const res = await fetch(`${settings.api}/oauth2/token`, {
         method: "POST",
         signal: AbortSignal.timeout(12_000),
-        redirect: "error",
+        redirect: "manual",
         headers: {
           "Content-Type": "application/json",
           "Square-Version": SQUARE_VERSION,

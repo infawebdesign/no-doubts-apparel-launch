@@ -69,7 +69,16 @@ export function paymentJson(body: unknown, status = 200, extra: Record<string, s
 export function paymentFailure(error: unknown) {
   if (error instanceof PaymentError) return paymentJson({ error: error.message }, error.status);
   // Never log tokens, authorization headers, raw responses, or customer details.
-  console.error("[square] request failed");
+  console.error("[square] request failed", {
+    type: error instanceof Error ? error.name : "unknown",
+    frames:
+      error instanceof Error
+        ? error.stack
+            ?.split("\n")
+            .filter((line) => /^\s+at /.test(line))
+            .slice(0, 4)
+        : [],
+  });
   return paymentJson({ error: "Square is temporarily unavailable. Please try again." }, 503);
 }
 
@@ -124,7 +133,7 @@ export async function squareJson<T>(
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     signal: AbortSignal.timeout(12_000),
-    redirect: "error",
+    redirect: "manual",
   });
   if (!res.ok) {
     console.error("[square] API unavailable", { status: res.status });
