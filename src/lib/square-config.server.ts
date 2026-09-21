@@ -136,7 +136,18 @@ export async function squareJson<T>(
     redirect: "manual",
   });
   if (!res.ok) {
-    console.error("[square] API unavailable", { status: res.status });
+    const failure = (await res.json().catch(() => ({}))) as {
+      errors?: { code?: string; field?: string }[];
+    };
+    // Log only structured, bounded identifiers; never raw messages or values.
+    const safe = (value: unknown) =>
+      typeof value === "string" && /^[A-Za-z0-9_.\[\]-]{1,100}$/.test(value) ? value : undefined;
+    console.error("[square] API unavailable", {
+      status: res.status,
+      errors: failure.errors
+        ?.slice(0, 5)
+        .map((error) => ({ code: safe(error.code), field: safe(error.field) })),
+    });
     throw new PaymentError(503, "Square is temporarily unavailable. Please try again.");
   }
   return (await res.json()) as T;

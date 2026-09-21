@@ -18,6 +18,13 @@ import {
 } from "../src/lib/square-oauth.server.ts";
 import { parseCart, squareCheckoutUrl } from "../src/lib/payment-contract.ts";
 import { checkoutAttempt } from "../src/lib/checkout-attempt.ts";
+import { hasExpectedShipping } from "../src/lib/shipping.ts";
+import {
+  parseShipping,
+  shippingOrderFields,
+  PROVINCES,
+  SHIPPING_METHODS,
+} from "../src/lib/shipping.ts";
 import type { CatalogObject } from "../src/lib/square-store.server.ts";
 import { squareJson, PaymentError } from "../src/lib/square-config.server.ts";
 
@@ -34,6 +41,16 @@ let apiFailure: string | null;
 let locationMerchant: string;
 const origin = "https://test.example";
 const item = { variationId: "variation-m", quantity: 1 };
+const shipping = {
+  name: "Test Buyer",
+  address: "1 Test Street",
+  apartment: "",
+  city: "Toronto",
+  province: "ON",
+  postalCode: "M5V 1A1",
+  country: "CA",
+  method: "regular",
+};
 const dbAdapter = (): D1Database => ({
   prepare(query) {
     let args: any[] = [];
@@ -168,6 +185,18 @@ beforeEach(async () => {
     }
     if (url.pathname === "/v2/online-checkout/payment-links") {
       order.reference_id = body.order.reference_id;
+      order.taxes = body.order.taxes;
+      order.fulfillments = body.order.fulfillments;
+      order.line_items = body.order.line_items.map((charge: any) => ({
+        ...charge,
+        total_tax_money: {
+          amount: Math.round(
+            ((charge.base_price_money?.amount ?? 3000) * Number(body.order.taxes[0].percentage)) /
+              100,
+          ),
+          currency: "CAD",
+        },
+      }));
       if (loseResponse) {
         loseResponse = false;
         throw new Error("Simulated lost response after creation");
@@ -202,7 +231,7 @@ function checkout(
     new Request(`${origin}/api/square/checkout`, {
       method: "POST",
       headers: { origin: requestOrigin, "content-type": "application/json" },
-      body: JSON.stringify({ attemptId, items, ...extra }),
+      body: JSON.stringify({ attemptId, items, shipping, ...extra }),
     }),
     env,
   );
@@ -219,11 +248,173 @@ test("public OAuth endpoints are disabled and do not call Square", () => {
 test("prices come from catalog references; injected totals are ignored", async () => {
   const response = await checkout(undefined, [{ ...item, priceAmount: 1 }], { total: 1 });
   assert.equal(response.status, 200);
-  assert.deepEqual(created()[0]!.body.order.line_items, [
-    { catalog_object_id: "variation-m", quantity: "1" },
-  ]);
-  assert.equal(created()[0]!.body.order.pricing_options.auto_apply_taxes, true);
+  assert.deepEqual(
+    created()[0]!.body.order.line_items.filter((line: any) => line.uid !== "shipping"),
+    [{ catalog_object_id: "variation-m", quantity: "1" }],
+  );
+  assert.equal(created()[0]!.body.order.pricing_options.auto_apply_taxes, false);
 });
+
+test("shipping is charged once and receives explicit destination tax", async () => {
+  for (const method of ["regular", "xpresspost"] as const) {
+    assert.equal(
+      (
+        await checkout(undefined, [item], {
+          shipping: { ...shipping, method },
+          shippingAmount: 1,
+          taxRate: 0,
+        })
+      ).status,
+      200,
+    );
+    const request = created().at(-1)!.body;
+    const charge = request.order.line_items.find((line: any) => line.uid === "shipping");
+    assert.equal(charge.base_price_money.amount, SHIPPING_METHODS[method].amount);
+    assert.equal(charge.quantity, "1");
+    assert.equal(request.order.service_charges, undefined);
+    assert.equal(request.order.taxes[0].percentage, "13");
+    assert.equal(request.order.taxes[0].scope, "ORDER");
+    assert.equal(request.checkout_options.ask_for_shipping_address, false);
+    assert.equal(request.checkout_options.shipping_fee, undefined);
+    assert.equal(request.order.fulfillments[0].type, "SHIPMENT");
+    assert.equal(request.order.fulfillments[0].shipment_details.recipient.address.country, "CA");
+  }
+});
+
+test("GST/HST rates cover all destinations and tax both shipping options", () => {
+  const expected = {
+    AB: 5,
+    BC: 5,
+    MB: 5,
+    NB: 15,
+    NL: 15,
+    NS: 14,
+    NT: 5,
+    NU: 5,
+    ON: 13,
+    PE: 15,
+    QC: 5,
+    SK: 5,
+    YT: 5,
+  };
+  for (const [province, rate] of Object.entries(expected)) {
+    assert.equal(PROVINCES[province as keyof typeof PROVINCES][1], rate);
+    const fields = shippingOrderFields({ ...shipping, province } as any);
+    assert.equal(fields.taxes[0]!.percentage, String(rate));
+    assert.equal(fields.taxes.length, 1);
+  }
+  assert.equal(Math.round((6000 + 1500) * 1.13), 8475);
+  assert.equal(Math.round((6000 + 2000) * 1.13), 9040);
+});
+
+test("invalid, foreign, or mismatched destinations cannot create payment links", async () => {
+  for (const invalid of [
+    undefined,
+    {},
+    { ...shipping, country: "US" },
+    { ...shipping, province: "XX" },
+    { ...shipping, province: "BC" },
+    { ...shipping, postalCode: "12345" },
+    { ...shipping, method: "free" },
+    { ...shipping, name: "" },
+  ]) {
+    assert.equal((await checkout(undefined, [item], { shipping: invalid })).status, 400);
+  }
+  assert.equal(calls.length, 0);
+  assert.equal(parseShipping({ ...shipping, postalCode: "m5v1a1" })?.postalCode, "M5V 1A1");
+});
+
+test("retry cannot reuse an order after its shipping method or address changes", async () => {
+  const id = crypto.randomUUID();
+  assert.equal((await checkout(id)).status, 200);
+  assert.equal(
+    (await checkout(id, [item], { shipping: { ...shipping, method: "xpresspost" } })).status,
+    409,
+  );
+  assert.equal(
+    (await checkout(id, [item], { shipping: { ...shipping, address: "2 Test Street" } })).status,
+    409,
+  );
+  assert.equal(created().length, 1);
+});
+test("shipping verification rejects missing tax, duplicate fees and changed destination", async () => {
+  const id = crypto.randomUUID();
+  await checkout(id);
+  const expected = shippingOrderFields(parseShipping(shipping)!);
+  assert.equal(hasExpectedShipping(order, expected), true);
+  const contactEdit = structuredClone(order);
+  contactEdit.fulfillments[0].shipment_details.recipient.display_name = "Updated contact";
+  assert.equal(hasExpectedShipping(contactEdit, expected), true);
+  for (const mutate of [
+    (o: any) => {
+      o.line_items.find((l: any) => l.uid === "shipping").total_tax_money.amount = 0;
+    },
+    (o: any) => {
+      o.line_items.find((l: any) => l.uid === "shipping").quantity = "2";
+    },
+    (o: any) => {
+      o.service_charges = [{ amount_money: { amount: 1500, currency: "CAD" } }];
+    },
+    (o: any) => {
+      o.fulfillments[0].shipment_details.recipient.address.country = "US";
+    },
+    (o: any) => {
+      o.fulfillments[0].shipment_details.shipping_type = "Different method";
+    },
+    (o: any) => {
+      o.taxes[0].percentage = "5";
+    },
+  ]) {
+    const modified = structuredClone(order);
+    mutate(modified);
+    assert.equal(hasExpectedShipping(modified, expected), false);
+  }
+  order.line_items.find((l: any) => l.uid === "shipping").total_tax_money.amount = 0;
+  assert.equal((await status(id)).status, 503);
+});
+
+test("hosted checkout accepts only the single zero CAD included-shipping fee", async () => {
+  await checkout(crypto.randomUUID());
+  const expected = shippingOrderFields(parseShipping(shipping)!);
+  const zero = { amount: 0, currency: "CAD" };
+  const fee = {
+    name: "Shipping included in order",
+    amount_money: zero,
+    applied_money: zero,
+    total_money: zero,
+    total_tax_money: zero,
+  };
+  order.service_charges = [structuredClone(fee)];
+  assert.equal(hasExpectedShipping(order, expected), true);
+  for (const field of ["amount_money", "applied_money", "total_money", "total_tax_money"]) {
+    const changed = structuredClone(order);
+    changed.service_charges[0][field].amount = 1;
+    assert.equal(hasExpectedShipping(changed, expected), false);
+    changed.service_charges[0][field] = { amount: 0, currency: "USD" };
+    assert.equal(hasExpectedShipping(changed, expected), false);
+    delete changed.service_charges[0][field];
+    assert.equal(hasExpectedShipping(changed, expected), false);
+  }
+  order.service_charges = [fee, fee];
+  assert.equal(hasExpectedShipping(order, expected), false);
+  order.service_charges = [{ ...fee, name: "Unexpected fee" }];
+  assert.equal(hasExpectedShipping(order, expected), false);
+});
+
+test("browser retries bind to address and shipping without storing the raw address", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (k: string) => values.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      values.set(k, v);
+    },
+  };
+  const a = checkoutAttempt([item], storage, "address-digest-a");
+  assert.equal(checkoutAttempt([item], storage, "address-digest-a").attemptId, a.attemptId);
+  assert.notEqual(checkoutAttempt([item], storage, "address-digest-b").attemptId, a.attemptId);
+  assert.equal([...values.values()].join("").includes(shipping.address), false);
+});
+
 test("invalid quantities and duplicate merged quantity limits fail before any API call", async () => {
   for (const quantity of [0, -1, 1.5, 11, "1", null])
     assert.equal(

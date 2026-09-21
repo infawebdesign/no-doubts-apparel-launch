@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { prepareCheckout } from "@/lib/checkout-attempt";
+import { parseShipping, PROVINCES, SHIPPING_METHODS } from "@/lib/shipping";
+import { ShippingFields, emptyShipping, type ShippingDraft } from "./ShippingFields";
 import { MAX_QTY_PER_LINE, squareCheckoutUrl } from "@/lib/payment-contract";
 import { Menu, X, ShoppingBag, Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/lib/cart";
@@ -86,6 +88,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
   const [submitting, setSubmitting] = useState(false);
   const checkoutBusy = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [shipping, setShipping] = useState<ShippingDraft>(emptyShipping);
 
   const subtotal = lines.reduce((sum, line) => sum + (line.priceAmount ?? 0) * line.quantity, 0);
 
@@ -96,6 +99,13 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
 
   const handleCheckout = async () => {
     if (!canCheckout || checkoutBusy.current) return;
+    const destination = parseShipping(shipping);
+    if (!destination) {
+      setError(
+        "Please complete your Canadian shipping address. Check that the postal code matches the province.",
+      );
+      return;
+    }
     checkoutBusy.current = true;
     setError(null);
     setSubmitting(true);
@@ -105,8 +115,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
         variationId: line.squareVariationId,
         quantity: line.quantity,
       }));
-      const attempt = await prepareCheckout(items);
-      const payload = { items, attemptId: attempt.attemptId };
+      const attempt = await prepareCheckout(items, destination);
+      const payload = { items, shipping: destination, attemptId: attempt.attemptId };
 
       const res = await fetch("/api/square/checkout", {
         method: "POST",
@@ -171,7 +181,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                       <button
                         type="button"
                         aria-label="Decrease quantity"
-                        disabled={line.quantity <= 1}
+                        disabled={line.quantity <= 1 || submitting}
                         onClick={() =>
                           addLine({
                             squareItemId: line.squareItemId,
@@ -221,6 +231,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                     <button
                       type="button"
                       aria-label={`Remove ${line.name}`}
+                      disabled={submitting}
                       onClick={() => removeLine(line.squareVariationId)}
                       className="text-muted-foreground transition-colors hover:text-bone"
                     >
@@ -234,6 +245,9 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
               ))}
             </ul>
           )}
+          {lines.length > 0 && (
+            <ShippingFields value={shipping} onChange={setShipping} disabled={submitting} />
+          )}
         </div>
 
         <SheetFooter className="flex-col border-t border-border pt-4 sm:flex-col sm:space-x-0">
@@ -241,6 +255,47 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
             <span className="label text-muted-foreground">Subtotal</span>
             <span className="display text-xl text-bone">{formatPrice(subtotal)}</span>
           </div>
+          {lines.length > 0 && (
+            <div className="space-y-1 pb-3 text-sm text-bone">
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>{formatPrice(SHIPPING_METHODS[shipping.method].amount)}</span>
+              </div>
+              {shipping.province && (
+                <>
+                  <div className="flex justify-between">
+                    <span>
+                      {PROVINCES[shipping.province][1] === 5 ? "GST" : "HST"} (
+                      {PROVINCES[shipping.province][1]}%, including shipping)
+                    </span>
+                    <span>
+                      {formatPrice(
+                        Math.round(
+                          ((subtotal + SHIPPING_METHODS[shipping.method].amount) *
+                            PROVINCES[shipping.province][1]) /
+                            100,
+                        ),
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Estimated total</span>
+                    <span>
+                      {formatPrice(
+                        subtotal +
+                          SHIPPING_METHODS[shipping.method].amount +
+                          Math.round(
+                            ((subtotal + SHIPPING_METHODS[shipping.method].amount) *
+                              PROVINCES[shipping.province][1]) /
+                              100,
+                          ),
+                      )}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
           <button
             type="button"

@@ -4,6 +4,7 @@ import {
   validAttempt,
   type PaymentLine,
 } from "./payment-contract.ts";
+import type { Shipping } from "./shipping.ts";
 
 export type CheckoutAttempt = { attemptId: string; cart: string };
 let memory: CheckoutAttempt | null = null;
@@ -11,10 +12,11 @@ let memory: CheckoutAttempt | null = null;
 export function checkoutAttempt(
   items: PaymentLine[],
   storage?: Pick<Storage, "getItem" | "setItem">,
+  shippingFingerprint = "",
 ): CheckoutAttempt {
   const normalized = parseCart({ items });
   if (!normalized) throw new Error("Please check the quantities in your bag.");
-  const cart = JSON.stringify(normalized);
+  const cart = JSON.stringify(normalized) + shippingFingerprint;
   let previous = memory;
   try {
     storage ??= window.localStorage;
@@ -40,12 +42,22 @@ export function checkoutAttempt(
   return result;
 }
 
-export async function prepareCheckout(items: PaymentLine[]) {
+export async function prepareCheckout(items: PaymentLine[], shipping: Shipping) {
+  // Store only a digest of the address in the browser's retry record.
+  const bytes = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(JSON.stringify(shipping)),
+  );
+  const fingerprint = Array.from(new Uint8Array(bytes), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
   // Serializes creation across same-origin tabs where Web Locks is available.
   if (typeof navigator !== "undefined" && navigator.locks) {
-    return navigator.locks.request("nd-checkout-attempt", () => checkoutAttempt(items));
+    return navigator.locks.request("nd-checkout-attempt", () =>
+      checkoutAttempt(items, undefined, fingerprint),
+    );
   }
-  return checkoutAttempt(items);
+  return checkoutAttempt(items, undefined, fingerprint);
 }
 
 export function forgetCheckout(id: string) {

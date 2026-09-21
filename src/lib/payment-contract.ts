@@ -1,6 +1,6 @@
 export const MAX_QTY_PER_LINE = 10;
 export const MAX_LINES = 20;
-export const CHECKOUT_STORAGE_KEY = "nd-checkout-v2";
+export const CHECKOUT_STORAGE_KEY = "nd-checkout-v3";
 export const STOREFRONT_SQUARE_NAMES = [
   "Earn Your Total",
   "Hit the Standard",

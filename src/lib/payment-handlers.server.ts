@@ -1,4 +1,5 @@
 import { parseCart, validAttempt, squareCheckoutUrl } from "./payment-contract.ts";
+import { parseShipping, shippingOrderFields, hasExpectedShipping } from "./shipping.ts";
 import { getSquareEnv, getValidSquareAccessToken, type SquareEnv } from "./square-oauth.server.ts";
 import {
   boundedJson,
@@ -75,20 +76,30 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
   try {
     env ??= await getSquareEnv();
     const config = checkSite(request, env, true);
-    const body = (await boundedJson(request)) as { attemptId?: unknown };
+    const body = (await boundedJson(request)) as { attemptId?: unknown; shipping?: unknown };
     const cart = parseCart(body);
+    const shipping = parseShipping(body.shipping);
+    if (!shipping)
+      throw new PaymentError(
+        400,
+        "Please enter a valid Canadian shipping address and shipping method.",
+      );
     if (!cart || !validAttempt(body.attemptId))
       throw new PaymentError(400, "Your cart could not be read. Please reload and try again.");
     await rateLimit(request, env, "checkout", 12);
     const db = env.SQUARE_DB!;
     const id = body.attemptId;
     const cartJson = JSON.stringify(cart);
+    const shippingFingerprint = await sha256(JSON.stringify(shipping));
+    const sameShipping = (value: Attempt) =>
+      JSON.parse(value.request_json)?.order?.metadata?.shipping_fingerprint === shippingFingerprint;
     const select = () =>
       db.prepare("SELECT * FROM checkout_attempts WHERE attempt_id = ?").bind(id).first<Attempt>();
     let attempt = await select();
     if (
       attempt &&
       (attempt.cart_json !== cartJson ||
+        !sameShipping(attempt) ||
         attempt.merchant_id !== config.merchantId ||
         attempt.location_id !== config.locationId ||
         attempt.environment !== env.SQUARE_ENVIRONMENT)
@@ -114,14 +125,22 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
         order: {
           location_id: config.locationId,
           reference_id: id,
-          line_items: cart.map((line) => ({
-            catalog_object_id: line.variationId,
-            quantity: String(line.quantity),
-          })),
-          pricing_options: { auto_apply_taxes: true },
+          ...shippingOrderFields(shipping),
+          line_items: [
+            ...cart.map((line) => ({
+              catalog_object_id: line.variationId,
+              quantity: String(line.quantity),
+            })),
+            ...shippingOrderFields(shipping).line_items,
+          ],
+          metadata: { shipping_fingerprint: shippingFingerprint },
         },
         checkout_options: {
-          ask_for_shipping_address: true,
+          // Address and taxable shipping are already fixed on the order. Asking
+          // again lets hosted checkout replace the address without repricing tax.
+          ask_for_shipping_address: false,
+          enable_coupon: false,
+          enable_loyalty: false,
           allow_tipping: false,
           merchant_support_email: "nodoubts.ca@gmail.com",
           redirect_url: `${config.origin}/order-confirmed?attempt=${id}`,
@@ -149,6 +168,7 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
     if (
       !attempt ||
       attempt.cart_json !== cartJson ||
+      !sameShipping(attempt) ||
       attempt.merchant_id !== config.merchantId ||
       attempt.location_id !== config.locationId ||
       attempt.environment !== env.SQUARE_ENVIRONMENT
@@ -168,6 +188,16 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
     );
     if (!squareCheckoutUrl(result.payment_link?.url) || !result.payment_link?.order_id)
       throw new PaymentError(503, "Checkout could not be started. Please try again.");
+    const { order: calculatedOrder } = await squareJson<{ order?: unknown }>(
+      env,
+      token,
+      `/v2/orders/${encodeURIComponent(result.payment_link.order_id)}`,
+    );
+    if (!hasExpectedShipping(calculatedOrder, shippingOrderFields(shipping)))
+      throw new PaymentError(
+        503,
+        "Shipping and tax could not be verified. Please contact us before paying.",
+      );
     await db
       .prepare("UPDATE checkout_attempts SET order_id = ?, checkout_url = ? WHERE attempt_id = ?")
       .bind(result.payment_link.order_id, result.payment_link.url, id)
@@ -186,7 +216,7 @@ type Order = {
   state?: string;
   total_money?: Money;
   net_amount_due_money?: Money;
-  line_items?: { catalog_object_id?: string; quantity?: string }[];
+  line_items?: { uid?: string; catalog_object_id?: string; quantity?: string }[];
   tenders?: { id?: string; payment_id?: string }[];
 };
 type Payment = {
@@ -234,11 +264,24 @@ export async function statusHandler(request: Request, env = undefined as SquareE
         "Payment could not be verified. Please contact us before paying again.",
       );
     if (order.state === "CANCELED") return paymentJson({ status: "canceled" });
+    const savedRequest = JSON.parse(attempt.request_json);
+    if (
+      savedRequest.order.metadata?.shipping_fingerprint &&
+      !hasExpectedShipping(order, savedRequest.order)
+    )
+      throw new PaymentError(
+        503,
+        "Shipping and tax could not be verified. Please contact us before paying again.",
+      );
     const orderCart = parseCart({
-      items: order.line_items?.map((line) => ({
-        variationId: line.catalog_object_id,
-        quantity: Number(line.quantity),
-      })),
+      items: order.line_items
+        ?.filter(
+          (line) => !(savedRequest.order.metadata?.shipping_fingerprint && line.uid === "shipping"),
+        )
+        .map((line) => ({
+          variationId: line.catalog_object_id,
+          quantity: Number(line.quantity),
+        })),
     });
     if (JSON.stringify(orderCart) !== attempt.cart_json)
       throw new PaymentError(
