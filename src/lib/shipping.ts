@@ -38,7 +38,7 @@ export function parseShipping(value: unknown): Shipping | null {
     return typeof v === "string" &&
       v.trim().length > 0 &&
       v.length <= max &&
-      !/[\x00-\x1f\x7f]/.test(v)
+      !Array.from(v).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
       ? v.trim()
       : null;
   };

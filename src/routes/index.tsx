@@ -1,13 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import heroImg from "@/assets/hero-campaign.jpg";
-import editorialImg from "@/assets/editorial-lift.jpg";
+const heroImg = "/campaign/NoDoubtTigerBlood-Single-Close-Full.webp";
+const editorialImg = "/campaign/NoDoubtRenaissance-Group-Full.webp";
 import { useQuery } from "@tanstack/react-query";
 import { formatPrice, products } from "@/lib/products";
-import {
-  findSquareItem,
-  itemPriceAmount,
-  squareCatalogQuery,
-} from "@/lib/square-catalog";
+import { findSquareItem, itemPriceAmount, squareCatalogQuery } from "@/lib/square-catalog";
 import { ProductCard } from "@/components/site/ProductCard";
 
 export const Route = createFileRoute("/")({
@@ -38,7 +34,6 @@ function Home() {
     null;
   return (
     <>
-
       <section className="relative">
         <div className="relative min-h-[100svh]">
           <img
@@ -53,7 +48,13 @@ function Home() {
             <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
               <div>
                 <h1 className="display text-[9vw] leading-[0.85] sm:text-[7vw] lg:text-[5.5rem]">
-                  No&#8209;Doubts
+                  <img
+                    src="/campaign/no-doubts-logo.png"
+                    alt="No Doubts"
+                    width={1441}
+                    height={260}
+                    className="h-auto w-full max-w-3xl"
+                  />
                 </h1>
                 <p className="display mt-4 text-base text-bone sm:text-xl lg:text-2xl">
                   Hit the standard.
@@ -62,12 +63,6 @@ function Home() {
                   <br />
                   Leave no doubts.
                 </p>
-                <Link
-                  to="/shop"
-                  className="label mt-6 inline-flex w-fit items-center gap-3 border border-bone px-6 py-3 transition-colors hover:bg-bone hover:text-ink sm:px-8 sm:py-4"
-                >
-                  Shop the drop <span aria-hidden>&rarr;</span>
-                </Link>
               </div>
 
               {featured && (
@@ -77,10 +72,10 @@ function Home() {
                   className="group hidden border border-bone/25 bg-ink/60 p-4 backdrop-blur-md lg:block"
                 >
                   <div className="aspect-[4/5] overflow-hidden bg-card">
-                    {featured.images[0]?.url && (
+                    {featured.coverImage?.url && (
                       <img
-                        src={featured.images[0].url}
-                        alt={featured.images[0].alt}
+                        src={featured.coverImage.url}
+                        alt={featured.coverImage.alt}
                         loading="lazy"
                         className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
@@ -102,7 +97,7 @@ function Home() {
 
       <section className="mx-auto max-w-[1600px] px-4 py-16 sm:px-8">
         <div className="flex flex-col items-start gap-4 border-b border-border pb-4 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <h2 className="display text-3xl sm:text-5xl">Featured Collection</h2>
+          <h2 className="display text-3xl sm:text-5xl">Collection One</h2>
           <Link
             to="/shop"
             className="label inline-flex w-fit items-center gap-3 border border-bone px-6 py-3 transition-colors hover:bg-bone hover:text-ink"
@@ -121,7 +116,7 @@ function Home() {
         <div className="mx-auto grid max-w-[1600px] items-stretch gap-0 lg:grid-cols-2">
           <img
             src={editorialImg}
-            alt="Chalked hands on a barbell"
+            alt="The No Doubts team wearing the Renaissance collection"
             loading="lazy"
             width={1024}
             height={1280}
@@ -129,15 +124,12 @@ function Home() {
           />
           <div className="flex flex-col justify-center gap-6 px-4 py-16 sm:px-12">
             <h2 className="display text-4xl sm:text-6xl">
-              Built by{" "}
-              <span className="text-muted-foreground">powerlifters</span>, worn
-              with <span className="text-muted-foreground">purpose</span>
+              You’re Capable of More than You Realize
             </h2>
             <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-              No Doubts Apparel was founded by Sarah and Francesco Catalano —
-              powerlifters and meet directors from Guelph, Ontario with over a
-              decade in the sport. Every design is built around the confidence
-              that comes from putting in the work and trusting your
+              No Doubts Apparel was founded by Sarah and Francesco Catalano — powerlifters and meet
+              directors from Guelph, Ontario with over a decade in the sport. Every design is built
+              around the confidence that comes from putting in the work and trusting your
               preparation — on the platform, in the gym, and out in the world.
             </p>
             <Link

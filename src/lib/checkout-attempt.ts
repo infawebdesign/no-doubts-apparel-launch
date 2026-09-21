@@ -6,7 +6,7 @@ import {
 } from "./payment-contract.ts";
 import type { Shipping } from "./shipping.ts";
 
-export type CheckoutAttempt = { attemptId: string; cart: string };
+export type CheckoutAttempt = { attemptId: string; cart: string; createdAt: number };
 let memory: CheckoutAttempt | null = null;
 
 export function checkoutAttempt(
@@ -28,11 +28,11 @@ export function checkoutAttempt(
   } catch {
     /* Keep a stable attempt in this tab when storage is unavailable. */
   }
-  if (previous?.cart === cart) {
+  if (previous?.cart === cart && Date.now() - previous.createdAt < 23 * 3600000) {
     memory = previous;
     return previous;
   }
-  const result = { attemptId: crypto.randomUUID(), cart };
+  const result = { attemptId: crypto.randomUUID(), cart, createdAt: Date.now() };
   memory = result;
   try {
     storage?.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(result));
@@ -42,11 +42,11 @@ export function checkoutAttempt(
   return result;
 }
 
-export async function prepareCheckout(items: PaymentLine[], shipping: Shipping) {
+export async function prepareCheckout(items: PaymentLine[], shipping: Shipping, prices = "") {
   // Store only a digest of the address in the browser's retry record.
   const bytes = await crypto.subtle.digest(
     "SHA-256",
-    new TextEncoder().encode(JSON.stringify(shipping)),
+    new TextEncoder().encode(JSON.stringify(shipping) + prices),
   );
   const fingerprint = Array.from(new Uint8Array(bytes), (b) =>
     b.toString(16).padStart(2, "0"),

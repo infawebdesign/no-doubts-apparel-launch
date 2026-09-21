@@ -9,7 +9,6 @@ export type SquareVariation = {
   name: string | null;
   priceAmount: number | null;
   currency: string | null;
-  inventoryQuantity: number | null;
   inStock: boolean;
 };
 
@@ -25,8 +24,9 @@ export type SquareItem = {
 export const STORE_ERROR_MESSAGE =
   "We're having trouble loading the store right now. Please try again shortly.";
 
-async function fetchSquareCatalog(): Promise<SquareItem[]> {
+export async function fetchSquareCatalog(): Promise<SquareItem[]> {
   const res = await fetch("/api/square/products", {
+    cache: "no-store",
     headers: { accept: "application/json" },
   });
   if (!res.ok) throw new Error(STORE_ERROR_MESSAGE);
@@ -45,7 +45,10 @@ export const squareCatalogQuery = queryOptions({
 });
 
 const normalize = (value: string) =>
-  value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
 /** Match a website product to its Square item by the mapped Square name. */
 export function findSquareItem(
@@ -70,26 +73,20 @@ export function isVariationHidden(name: string | null): boolean {
 }
 
 /** Variations the storefront is allowed to sell right now. */
-export function visibleVariations(
-  item: SquareItem | undefined,
-): SquareVariation[] {
+export function visibleVariations(item: SquareItem | undefined): SquareVariation[] {
   if (!item) return [];
   return item.variations.filter((v) => !isVariationHidden(v.name));
 }
 
 const sizeRank = (name: string | null) => {
   if (!name) return SIZE_ORDER.length;
-  const idx = SIZE_ORDER.findIndex(
-    (s) => s.toLowerCase() === name.trim().toLowerCase(),
-  );
+  const idx = SIZE_ORDER.findIndex((s) => s.toLowerCase() === name.trim().toLowerCase());
   return idx === -1 ? SIZE_ORDER.length : idx;
 };
 
 /** Variations sorted into the usual size run, excluding hidden sizes. */
 export function sortedVariations(item: SquareItem | undefined) {
-  return visibleVariations(item).sort(
-    (a, b) => sizeRank(a.name) - sizeRank(b.name),
-  );
+  return visibleVariations(item).sort((a, b) => sizeRank(a.name) - sizeRank(b.name));
 }
 
 /** Lowest live price across sellable variations, in cents. */

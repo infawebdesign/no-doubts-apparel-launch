@@ -1,12 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  formatPrice,
-  getProduct,
-  products,
-  type Product,
-} from "@/lib/products";
+import { formatPrice, getProduct, products, type Product } from "@/lib/products";
 import {
   findSquareItem,
   itemCurrency,
@@ -17,7 +12,6 @@ import {
 } from "@/lib/square-catalog";
 import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/site/ProductCard";
-
 
 export const Route = createFileRoute("/product/$slug")({
   loader: ({ params }) => {
@@ -70,20 +64,15 @@ function ProductDetail({ product }: { product: Product }) {
         name: size,
         priceAmount: product.priceCents,
         currency: "CAD",
-        inventoryQuantity: null,
         inStock: true,
       }));
-  const selected =
-    variations.find((v) => (v.name ?? "") === selectedSize) ?? null;
-  const price =
-    selected?.priceAmount ?? itemPriceAmount(squareItem) ?? product.priceCents;
+  const selected = variations.find((v) => (v.name ?? "") === selectedSize) ?? null;
+  const price = selected?.priceAmount ?? itemPriceAmount(squareItem) ?? product.priceCents;
   const currency = itemCurrency(squareItem);
   const { addLine } = useCart();
   const [added, setAdded] = useState(false);
 
-  const canAdd = Boolean(
-    liveAvailable && selected && selected.id && selected.inStock,
-  );
+  const canAdd = Boolean(liveAvailable && selected && selected.id && selected.inStock);
 
   const handleAdd = () => {
     if (!squareItem || !selected || !selected.inStock) return;
@@ -104,7 +93,6 @@ function ProductDetail({ product }: { product: Product }) {
   const image = product.images[activeImage];
   const related = products.filter((p) => p.id !== product.id).slice(0, 3);
 
-
   return (
     <div>
       <div className="mx-auto max-w-[1600px] px-4 py-8 pt-28 sm:px-8">
@@ -123,28 +111,35 @@ function ProductDetail({ product }: { product: Product }) {
                 alt={image.alt}
                 width={1200}
                 height={1500}
-                className="size-full object-cover"
+                className={`size-full ${image.sizeGuide ? "object-contain" : "object-cover"}`}
               />
             ) : (
               <div className="grid size-full place-items-center border border-dashed border-border text-center">
                 <div className="px-6">
-                  <p className="display text-2xl text-muted-foreground">
-                    Image pending
-                  </p>
-                  <p className="label mt-2 text-muted-foreground">
-                    Final photography TBC
-                  </p>
+                  <p className="display text-2xl text-muted-foreground">Image pending</p>
+                  <p className="label mt-2 text-muted-foreground">Final photography TBC</p>
                 </div>
               </div>
             )}
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          {image?.sizeGuide && image.url && (
+            <a
+              href={image.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block underline"
+            >
+              Open full-size size guide
+            </a>
+          )}
+          <div className="grid grid-cols-5 gap-3">
             {product.images.map((img, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setActiveImage(i)}
-                aria-label={`View image ${i + 1}`}
+                aria-label={img.sizeGuide ? "View size guide" : `View image ${i + 1}`}
+                aria-pressed={i === activeImage}
                 className={`aspect-square overflow-hidden border bg-muted ${
                   i === activeImage ? "border-bone" : "border-border"
                 }`}
@@ -154,7 +149,7 @@ function ProductDetail({ product }: { product: Product }) {
                     src={img.url}
                     alt={img.alt}
                     loading="lazy"
-                    className="size-full object-cover"
+                    className={`size-full ${img.sizeGuide ? "object-contain" : "object-cover"}`}
                   />
                 ) : (
                   <span className="label grid size-full place-items-center text-[9px] text-muted-foreground">
@@ -172,7 +167,7 @@ function ProductDetail({ product }: { product: Product }) {
             {isPending ? "\u2014" : `${formatPrice(price)} ${currency}`}
           </p>
           <p className="label mt-1 text-muted-foreground">
-            All sizes same price + HST
+            All sizes same price + applicable GST/HST
           </p>
 
           <div className="mt-8">
@@ -228,31 +223,26 @@ function ProductDetail({ product }: { product: Product }) {
 
           {!isPending && !liveAvailable && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Online purchasing is temporarily unavailable. Please check back
-              shortly.
+              Online purchasing is temporarily unavailable. Please check back shortly.
             </p>
           )}
-
 
           <div className="mt-10 space-y-4 border-t border-border pt-6">
             <div>
               <h2 className="label text-bone">Description</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {product.description}
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{product.description}</p>
             </div>
             <div>
               <h2 className="label text-bone">Details</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                60/40 blend. Unisex sizing from XS–2XL. Price is the same across
-                all sizes.
+                60/40 blend. Unisex sizing from XS–2XL. Price is the same across all sizes.
               </p>
             </div>
             <div>
               <h2 className="label text-bone">Shipping</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                $15 flat-rate shipping within Canada. Orders typically process
-                within 24–48 hours. Tracking provided via Canada Post.
+                Canada-wide shipping: Regular Parcel $15 or Xpresspost $20. Orders typically process
+                within 1–2 business days. Tracking provided via Canada Post.
               </p>
             </div>
           </div>

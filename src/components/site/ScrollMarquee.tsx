@@ -1,58 +1,116 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
-/**
- * A marquee whose position is driven by page scroll — it drifts left as you
- * scroll down and reverses as you scroll up, with velocity-based smoothing.
- */
-export function ScrollMarquee({
-  images,
-}: {
-  images: { url: string; alt: string }[];
-}) {
+/** Native scrolling supports touch, trackpads and keys; page scrolling adds motion. */
+export function ScrollMarquee({ images }: { images: { url: string; alt: string }[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState(0);
+  const pauseUntil = useRef(0);
+  const dragging = useRef<{ x: number; left: number; pointer: number } | null>(null);
+  const pause = () => {
+    pauseUntil.current = Date.now() + 2500;
+  };
 
   useEffect(() => {
-    let raf = 0;
-    let current = 0;
-    let lastScroll = window.scrollY;
-
-    const tick = () => {
-      const y = window.scrollY;
-      const delta = y - lastScroll;
-      lastScroll = y;
-      // Drift left on scroll down; idle auto-drift keeps it alive
-      current -= delta * 0.6 + 0.35;
-
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const delta = window.scrollY - lastY;
+      lastY = window.scrollY;
       const track = trackRef.current;
-      if (track) {
-        const half = track.scrollWidth / 2;
-        // Wrap seamlessly
-        const wrapped = ((current % half) + half) % half - half;
-        setOffset(wrapped);
-      }
-      raf = requestAnimationFrame(tick);
+      if (!track || reducedMotion.matches || dragging.current || Date.now() < pauseUntil.current)
+        return;
+      const bounds = track.getBoundingClientRect();
+      if (bounds.bottom > 0 && bounds.top < window.innerHeight) track.scrollLeft += delta * 0.6;
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const doubled = [...images, ...images];
+  const move = (direction: number) => {
+    pause();
+    const track = trackRef.current;
+    if (track)
+      track.scrollBy({
+        left: direction * track.clientWidth * 0.75,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+  };
 
   return (
-    <div className="overflow-hidden border-y border-border py-6">
+    <div className="border-y border-border py-6">
+      <div className="mx-auto mb-4 flex max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-8">
+        <p id="gallery-help" className="text-sm text-muted-foreground">
+          Drag or swipe to explore. Use the arrows for more photos.
+        </p>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            aria-label="Previous photos"
+            aria-controls="team-gallery"
+            onClick={() => move(-1)}
+            className="border border-border px-4 py-2 hover:bg-muted"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            aria-label="Next photos"
+            aria-controls="team-gallery"
+            onClick={() => move(1)}
+            className="border border-border px-4 py-2 hover:bg-muted"
+          >
+            →
+          </button>
+        </div>
+      </div>
       <div
+        id="team-gallery"
         ref={trackRef}
-        className="flex w-max gap-4 will-change-transform"
-        style={{ transform: `translate3d(${offset}px, 0, 0)` }}
+        role="region"
+        aria-label="No Doubts photo gallery"
+        aria-describedby="gallery-help"
+        tabIndex={0}
+        className="flex cursor-grab gap-4 overflow-x-auto overscroll-x-contain px-4 pb-4 outline-offset-4 active:cursor-grabbing sm:px-8"
+        onFocus={pause}
+        onWheel={pause}
+        onKeyDown={pause}
+        onPointerDown={(event) => {
+          pause();
+          if (event.pointerType !== "mouse" || event.button !== 0) return;
+          dragging.current = {
+            x: event.clientX,
+            left: event.currentTarget.scrollLeft,
+            pointer: event.pointerId,
+          };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          const drag = dragging.current;
+          if (drag && drag.pointer === event.pointerId)
+            event.currentTarget.scrollLeft = drag.left - (event.clientX - drag.x);
+        }}
+        onPointerUp={() => {
+          dragging.current = null;
+          pause();
+        }}
+        onPointerCancel={() => {
+          dragging.current = null;
+          pause();
+        }}
+        onLostPointerCapture={() => {
+          dragging.current = null;
+        }}
       >
-        {doubled.map((img, i) => (
+        {images.map((img) => (
           <img
-            key={`${img.url}-${i}`}
+            key={img.url}
             src={img.url}
             alt={img.alt}
             loading="lazy"
-            className="aspect-[4/5] w-56 object-cover object-top sm:w-72 lg:w-80"
+            width={640}
+            height={800}
+            className="aspect-[4/5] w-56 shrink-0 select-none object-cover object-top sm:w-72 lg:w-80"
             draggable={false}
           />
         ))}

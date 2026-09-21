@@ -166,7 +166,6 @@ export function publicStore(store: Awaited<ReturnType<typeof loadStore>>, locati
           name: variation.item_variation_data?.name ?? null,
           priceAmount: detail.amount,
           currency: "CAD",
-          inventoryQuantity: detail.quantity,
           inStock: detail.inStock,
         },
       ];

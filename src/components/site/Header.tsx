@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { prepareCheckout } from "@/lib/checkout-attempt";
 import { parseShipping, PROVINCES, SHIPPING_METHODS } from "@/lib/shipping";
 import { ShippingFields, emptyShipping, type ShippingDraft } from "./ShippingFields";
@@ -24,7 +24,13 @@ export function Header() {
     <header className="absolute inset-x-0 top-0 z-50">
       <div className="mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-5 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:justify-normal sm:px-8">
         <Link to="/" className="display shrink-0 text-2xl tracking-tight sm:text-3xl">
-          No&#8209;Doubts
+          <img
+            src="/campaign/no-doubts-logo.png"
+            alt="No Doubts — home"
+            width={1441}
+            height={260}
+            className="h-auto w-36 sm:w-44"
+          />
         </Link>
 
         <nav className="hidden justify-center gap-10 md:flex">
@@ -84,18 +90,42 @@ export function Header() {
 }
 
 function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { lines, count, removeLine, addLine } = useCart();
+  const { lines, count, removeLine, addLine, refreshPrices } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const checkoutBusy = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [shipping, setShipping] = useState<ShippingDraft>(emptyShipping);
+  const [reviewed, setReviewed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [catalogReady, setCatalogReady] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setRefreshing(true);
+    setCatalogReady(false);
+    refreshPrices()
+      .then(() => {
+        if (active) setCatalogReady(true);
+      })
+      .catch(() => {
+        if (active) setError("We couldn’t refresh prices. Close and reopen your bag to retry.");
+      })
+      .finally(() => {
+        if (active) setRefreshing(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, refreshPrices]);
 
   const subtotal = lines.reduce((sum, line) => sum + (line.priceAmount ?? 0) * line.quantity, 0);
 
   const canCheckout =
     !submitting &&
+    !refreshing &&
+    catalogReady &&
     lines.length > 0 &&
-    lines.every((line) => line.squareVariationId && line.quantity > 0);
+    lines.every((line) => line.squareVariationId && line.quantity > 0 && line.priceAmount !== null);
 
   const handleCheckout = async () => {
     if (!canCheckout || checkoutBusy.current) return;
@@ -107,16 +137,38 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
       return;
     }
     checkoutBusy.current = true;
+    if (!reviewed) {
+      checkoutBusy.current = false;
+      setError("Please review and confirm your delivery address below.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
 
     try {
+      if (await refreshPrices()) {
+        setError(
+          "Prices or availability changed. Please review your updated bag before continuing.",
+        );
+        setSubmitting(false);
+        checkoutBusy.current = false;
+        return;
+      }
       const items = lines.map((line) => ({
         variationId: line.squareVariationId,
         quantity: line.quantity,
       }));
-      const attempt = await prepareCheckout(items, destination);
-      const payload = { items, shipping: destination, attemptId: attempt.attemptId };
+      const expectedPrices = lines.map((line) => ({
+        variationId: line.squareVariationId,
+        amount: line.priceAmount,
+      }));
+      const attempt = await prepareCheckout(items, destination, JSON.stringify(expectedPrices));
+      const payload = {
+        items,
+        expectedPrices,
+        shipping: destination,
+        attemptId: attempt.attemptId,
+      };
 
       const res = await fetch("/api/square/checkout", {
         method: "POST",
@@ -238,7 +290,9 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                       <Trash2 className="size-4" />
                     </button>
                     <span className="text-sm font-semibold text-bone">
-                      {formatPrice((line.priceAmount ?? 0) * line.quantity)}
+                      {line.priceAmount === null
+                        ? "Unavailable"
+                        : formatPrice(line.priceAmount * line.quantity)}
                     </span>
                   </div>
                 </li>
@@ -246,7 +300,45 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
             </ul>
           )}
           {lines.length > 0 && (
-            <ShippingFields value={shipping} onChange={setShipping} disabled={submitting} />
+            <>
+              <ShippingFields
+                value={shipping}
+                onChange={(value) => {
+                  setShipping(value);
+                  setReviewed(false);
+                }}
+                disabled={submitting}
+              />
+              {parseShipping(shipping) && (
+                <div className="mt-4 space-y-2 border border-border p-3 text-sm">
+                  <p className="font-semibold">Review your delivery address</p>
+                  <p>
+                    {shipping.name}
+                    <br />
+                    {shipping.address}
+                    {shipping.apartment && `, ${shipping.apartment}`}
+                    <br />
+                    {shipping.city}, {shipping.province} {shipping.postalCode}
+                    <br />
+                    Canada
+                  </p>
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={reviewed}
+                      disabled={submitting}
+                      onChange={(event) => setReviewed(event.target.checked)}
+                    />
+                    <span>I checked this address and confirm it is correct.</span>
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Square and digital wallets include shipping in the order subtotal. The final
+                    total includes shipping and GST/HST.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -305,7 +397,11 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
               canCheckout ? "hover:opacity-90" : "cursor-not-allowed opacity-50"
             }`}
           >
-            {submitting ? "Redirecting..." : `Checkout ${count > 0 ? `(${count})` : ""}`}
+            {refreshing
+              ? "Checking prices…"
+              : submitting
+                ? "Redirecting..."
+                : `Checkout ${count > 0 ? `(${count})` : ""}`}
           </button>
           <p className="mt-2 text-center text-[10px] text-muted-foreground">
             Canada-only shipping. Regular Parcel $15 / Xpresspost $20. Orders typically process

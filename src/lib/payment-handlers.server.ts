@@ -1,5 +1,6 @@
 import { parseCart, validAttempt, squareCheckoutUrl } from "./payment-contract.ts";
 import { parseShipping, shippingOrderFields, hasExpectedShipping } from "./shipping.ts";
+import { redactCheckout, verifyStoredShipping } from "./checkout-privacy.server.ts";
 import { getSquareEnv, getValidSquareAccessToken, type SquareEnv } from "./square-oauth.server.ts";
 import {
   boundedJson,
@@ -76,7 +77,11 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
   try {
     env ??= await getSquareEnv();
     const config = checkSite(request, env, true);
-    const body = (await boundedJson(request)) as { attemptId?: unknown; shipping?: unknown };
+    const body = (await boundedJson(request)) as {
+      attemptId?: unknown;
+      shipping?: unknown;
+      expectedPrices?: unknown;
+    };
     const cart = parseCart(body);
     const shipping = parseShipping(body.shipping);
     if (!shipping)
@@ -96,6 +101,11 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
     const select = () =>
       db.prepare("SELECT * FROM checkout_attempts WHERE attempt_id = ?").bind(id).first<Attempt>();
     let attempt = await select();
+    if (attempt && Date.now() - attempt.created_at > 86400000)
+      throw new PaymentError(
+        409,
+        "This checkout has expired. Please start a fresh checkout from your bag.",
+      );
     if (
       attempt &&
       (attempt.cart_json !== cartJson ||
@@ -117,6 +127,20 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
         const variation = byId.get(line.variationId);
         if (!variation) throw new PaymentError(409, "An item in your bag is no longer available.");
         const detail = variationDetails(variation, config.locationId, store.counts);
+        if (body.expectedPrices !== undefined) {
+          const prices = body.expectedPrices;
+          if (
+            !Array.isArray(prices) ||
+            prices.length !== cart.length ||
+            prices.filter(
+              (price) => price?.variationId === line.variationId && price.amount === detail.amount,
+            ).length !== 1
+          )
+            throw new PaymentError(
+              409,
+              "Prices changed. Please reopen your bag and review the current total.",
+            );
+        }
         if (!detail.inStock || (detail.quantity !== null && line.quantity > detail.quantity))
           throw new PaymentError(409, "There is not enough stock for an item in your bag.");
       }
@@ -129,6 +153,9 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
           line_items: [
             ...cart.map((line) => ({
               catalog_object_id: line.variationId,
+              ...(byId.get(line.variationId)?.version
+                ? { catalog_version: byId.get(line.variationId)!.version }
+                : {}),
               quantity: String(line.quantity),
             })),
             ...shippingOrderFields(shipping).line_items,
@@ -178,6 +205,16 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
     if (attempt.checkout_url && attempt.order_id) {
       if (!squareCheckoutUrl(attempt.checkout_url))
         throw new PaymentError(503, "Checkout is temporarily unavailable.");
+      const { order } = await squareJson<{ order?: unknown }>(
+        env,
+        token,
+        `/v2/orders/${encodeURIComponent(attempt.order_id)}`,
+      );
+      if (!(await verifyStoredShipping(order, attempt.request_json, env)))
+        throw new PaymentError(
+          503,
+          "Shipping and tax could not be verified. Please contact us before paying.",
+        );
       return paymentJson({ checkoutUrl: attempt.checkout_url, attemptId: id });
     }
     const result = await squareJson<{ payment_link?: { url?: string; order_id?: string } }>(
@@ -199,8 +236,15 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
         "Shipping and tax could not be verified. Please contact us before paying.",
       );
     await db
-      .prepare("UPDATE checkout_attempts SET order_id = ?, checkout_url = ? WHERE attempt_id = ?")
-      .bind(result.payment_link.order_id, result.payment_link.url, id)
+      .prepare(
+        "UPDATE checkout_attempts SET order_id = ?, checkout_url = ?, request_json = ? WHERE attempt_id = ?",
+      )
+      .bind(
+        result.payment_link.order_id,
+        result.payment_link.url,
+        await redactCheckout(attempt.request_json, env),
+        id,
+      )
       .run();
     return paymentJson({ checkoutUrl: result.payment_link.url, attemptId: id });
   } catch (error) {
@@ -265,10 +309,7 @@ export async function statusHandler(request: Request, env = undefined as SquareE
       );
     if (order.state === "CANCELED") return paymentJson({ status: "canceled" });
     const savedRequest = JSON.parse(attempt.request_json);
-    if (
-      savedRequest.order.metadata?.shipping_fingerprint &&
-      !hasExpectedShipping(order, savedRequest.order)
-    )
+    if (!(await verifyStoredShipping(order, attempt.request_json, env)))
       throw new PaymentError(
         503,
         "Shipping and tax could not be verified. Please contact us before paying again.",

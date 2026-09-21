@@ -2,6 +2,9 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { securityHeaders } from "./lib/security-headers";
+import { maintainPayments } from "./lib/payment-maintenance.server";
+import type { SquareEnv } from "./lib/square-oauth.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -46,16 +49,28 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const nonce = crypto.randomUUID().replaceAll("-", "");
+    const headers = new Headers(request.headers);
+    headers.set("x-nd-csp-nonce", nonce);
+    request = new Request(request, { headers });
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return securityHeaders(await normalizeCatastrophicSsrResponse(response), nonce);
     } catch (error) {
-      console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+      console.error("[server] request failed", {
+        type: error instanceof Error ? error.name : "unknown",
       });
+      return securityHeaders(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+        nonce,
+      );
     }
+  },
+  async scheduled(_event: unknown, env: SquareEnv) {
+    await maintainPayments(env);
   },
 };

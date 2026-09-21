@@ -33,7 +33,13 @@ function About() {
     <div>
       <header className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-20 sm:pt-36">
         <h1 className="display text-[14vw] leading-[0.85] sm:text-[9vw] lg:text-[8rem]">
-          No <span className="text-muted-foreground">Doubts</span>
+          <img
+            src="/campaign/no-doubts-logo.png"
+            alt="No Doubts"
+            width={1441}
+            height={260}
+            className="h-auto w-full max-w-4xl"
+          />
         </h1>
       </header>
 
@@ -45,20 +51,16 @@ function About() {
           <p className="label text-sm uppercase tracking-widest text-muted-foreground">
             Meet the founders
           </p>
-          <h2 className="display text-3xl sm:text-5xl">
-            Sarah &amp; Francesco Catalano
-          </h2>
+          <h2 className="display text-3xl sm:text-5xl">Sarah &amp; Francesco Catalano</h2>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-            As powerlifters and meet directors, we've experienced this sport
-            from both sides of the platform: as competitors chasing our own
-            PRs, and as the people behind the scenes making sure others get
-            their shot at theirs. We're based in Guelph, Ontario, raising two
-            young boys, and running Catalano Events, an events company hosting
-            premier powerlifting meets.
+            As powerlifters and meet directors, we've experienced this sport from both sides of the
+            platform: as competitors chasing our own PRs, and as the people behind the scenes making
+            sure others get their shot at theirs. We're based in Guelph, Ontario, raising two young
+            boys, and running Catalano Events, an events company hosting premier powerlifting meets.
           </p>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-            We've been involved in this sport for 10+ years; it's how we met
-            each other, and it's shaped nearly every part of our lives since.
+            We've been involved in this sport for 10+ years; it's how we met each other, and it's
+            shaped nearly every part of our lives since.
           </p>
         </div>
         <img
@@ -86,8 +88,8 @@ function About() {
                 text: "Competitors chasing PRs, and meet directors making sure others get their shot.",
               },
               {
-                title: "Guelph, Ontario",
-                text: "Home of No Doubts Apparel and Catalano Events, hosting premier powerlifting meets.",
+                title: "Proudly Canadian Owned and Operated",
+                text: "We are proud to share that our designs are created by humans, our imagery features real people, and we are completely manufactured by Canadian suppliers.",
               },
             ].map((block, i, arr) => (
               <div
@@ -116,18 +118,16 @@ function About() {
           <div className="space-y-6 p-8 sm:p-12 lg:p-16">
             <h2 className="display text-3xl sm:text-5xl">Why No Doubts exists</h2>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              We created No Doubts Apparel to represent the confidence that comes
-              from putting in the work, trusting your preparation, and knowing
-              you're capable of more than you think. We've seen what that belief
-              does under a heavy bar, and we've seen it carry into careers,
-              relationships, and everyday life: for us and for the lifters we've
-              cheered for on our platform. That's why we started an apparel
-              company built around it.
+              We created No Doubts Apparel to represent the confidence that comes from putting in
+              the work, trusting your preparation, and knowing you're capable of more than you
+              think. We've seen what that belief does under a heavy bar, and we've seen it carry
+              into careers, relationships, and everyday life: for us and for the lifters we've
+              cheered for on our platform. That's why we started an apparel company built around it.
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              We wanted to create gear that looks and feels as strong and bold as
-              the work you put in. Each design represents something you can
-              proudly wear on the platform, at the gym, or out in the world.
+              We wanted to create gear that looks and feels as strong and bold as the work you put
+              in. Each design represents something you can proudly wear on the platform, at the gym,
+              or out in the world.
             </p>
           </div>
         </div>
@@ -140,6 +140,18 @@ function About() {
         </div>
         <ScrollMarquee
           images={[
+            {
+              url: "/campaign/NoDoubtVarsity-Single-Male-Action-Full.webp",
+              alt: "Varsity Tee in action",
+            },
+            {
+              url: "/campaign/NoDoubtVarsity-Group-Alt-Full.webp",
+              alt: "No Doubts team in Varsity tees",
+            },
+            {
+              url: "/campaign/Copy of NoDoubtCEO-Group-3-Full.webp",
+              alt: "Sarah and Francesco wearing No Doubts",
+            },
             {
               url: ceoImg,
               alt: "Sarah and Francesco Catalano in No Doubts tees",
@@ -180,8 +192,8 @@ function About() {
             <span className="text-muted-foreground">It's a mindset.</span>
           </h2>
           <p className="mt-8 max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Stop doubting yourself and start trusting that you're capable of
-            more than you think. We can't wait to see you all in our gear.
+            Stop doubting yourself and start trusting that you're capable of more than you think. We
+            can't wait to see you all in our gear.
           </p>
           <Link
             to="/shop"

@@ -27,6 +27,9 @@ import {
 } from "../src/lib/shipping.ts";
 import type { CatalogObject } from "../src/lib/square-store.server.ts";
 import { squareJson, PaymentError } from "../src/lib/square-config.server.ts";
+import { redactCheckout, verifyStoredShipping } from "../src/lib/checkout-privacy.server.ts";
+import { maintainPayments } from "../src/lib/payment-maintenance.server.ts";
+import { securityHeaders } from "../src/lib/security-headers.ts";
 
 let sql: DatabaseSync;
 let env: SquareEnv;
@@ -89,6 +92,9 @@ beforeEach(async () => {
   sql = new DatabaseSync(":memory:");
   sql.exec(
     readFileSync(new URL("../migrations/0001_payment_attempts.sql", import.meta.url), "utf8"),
+  );
+  sql.exec(
+    readFileSync(new URL("../migrations/0002_payment_maintenance.sql", import.meta.url), "utf8"),
   );
   sql.exec(`CREATE TABLE square_oauth_tokens (merchant_id TEXT PRIMARY KEY, access_token_ciphertext TEXT,
     access_token_iv TEXT, refresh_token_ciphertext TEXT, refresh_token_iv TEXT, expires_at TEXT, updated_at TEXT)`);
@@ -537,7 +543,8 @@ test("other-location inventory cannot override the configured location", async (
   assert.equal(response.status, 200);
   const data = await response.json();
   assert.equal(data.items[0].variations.length, 1);
-  assert.equal(data.items[0].variations[0].inventoryQuantity, 3);
+  assert.equal(data.items[0].variations[0].inventoryQuantity, undefined);
+  assert.equal(data.items[0].variations[0].inStock, true);
 });
 test("parent location restrictions and sold-out overrides are enforced", async () => {
   objects[0]!.absent_at_location_ids = ["location"];
@@ -675,6 +682,94 @@ test("redirect URLs are limited to exact Square HTTPS hosts", () => {
     "https://square.link:999/a",
   ])
     assert.equal(squareCheckoutUrl(value), false);
+});
+
+test("created checkout snapshots redact PII and still verify payment and destination", async () => {
+  const id = crypto.randomUUID();
+  await checkout(id);
+  const snapshot = (
+    sql.prepare("SELECT request_json FROM checkout_attempts WHERE attempt_id = ?").get(id) as any
+  ).request_json;
+  assert.equal(snapshot.includes(shipping.address), false);
+  assert.equal(snapshot.includes(shipping.name), false);
+  assert.equal(snapshot.includes(shipping.postalCode), false);
+  assert.equal(await verifyStoredShipping(order, snapshot, env), true);
+  assert.equal((await (await status(id)).json()).status, "paid");
+  order.fulfillments[0].shipment_details.recipient.address.address_line_1 = "2 Other Street";
+  assert.equal(await verifyStoredShipping(order, snapshot, env), false);
+  assert.equal((await status(id)).status, 503);
+  assert.equal((await checkout(id)).status, 503);
+});
+
+test("redaction is idempotent and keyed verification cannot be transplanted", async () => {
+  await checkout();
+  const raw = JSON.stringify(created()[0]!.body);
+  const redacted = await redactCheckout(raw, env);
+  assert.equal(await redactCheckout(redacted, env), redacted);
+  assert.equal(
+    await verifyStoredShipping(order, redacted, {
+      ...env,
+      SQUARE_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 8).toString("base64"),
+    }),
+    false,
+  );
+});
+
+test("maintenance reconciles without buyer return and bounds address retention", async () => {
+  const id = crypto.randomUUID();
+  await checkout(id);
+  sql
+    .prepare("UPDATE checkout_attempts SET request_json = ? WHERE attempt_id = ?")
+    .run(JSON.stringify(created()[0]!.body), id);
+  await maintainPayments(env);
+  const row = sql.prepare("SELECT * FROM checkout_attempts WHERE attempt_id = ?").get(id) as any;
+  assert.equal(row.verified_status, "paid");
+  assert.ok(row.paid_at);
+  assert.equal(row.request_json.includes(shipping.address), false);
+  sql
+    .prepare(
+      "UPDATE checkout_attempts SET order_id = NULL, request_json = ?, created_at = ? WHERE attempt_id = ?",
+    )
+    .run(JSON.stringify(created()[0]!.body), Date.now() - 2 * 86400000, id);
+  await maintainPayments(env);
+  assert.equal(
+    (sql.prepare("SELECT request_json FROM checkout_attempts WHERE attempt_id = ?").get(id) as any)
+      .request_json,
+    "{}",
+  );
+  assert.equal((await checkout(id)).status, 409);
+  await maintainPayments(env, Date.now() + 91 * 86400000);
+  assert.equal(
+    sql.prepare("SELECT * FROM checkout_attempts WHERE attempt_id = ?").get(id),
+    undefined,
+  );
+});
+
+test("stale display prices never silently create a different-price checkout", async () => {
+  const extra = { expectedPrices: [{ variationId: item.variationId, amount: 1 }] };
+  assert.equal((await checkout(undefined, [item], extra)).status, 409);
+  assert.equal(created().length, 0);
+  assert.equal(
+    (
+      await checkout(undefined, [item], {
+        expectedPrices: [{ variationId: item.variationId, amount: 3000 }],
+      })
+    ).status,
+    200,
+  );
+});
+
+test("security headers protect HTML without caching CSP nonces", async () => {
+  const response = securityHeaders(
+    new Response("ok", { headers: { "content-type": "text/html" } }),
+    "unique-nonce",
+  );
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.match(response.headers.get("content-security-policy")!, /nonce-unique-nonce/);
+  assert.match(response.headers.get("content-security-policy")!, /frame-ancestors 'none'/);
+  assert.equal(await response.text(), "ok");
 });
 
 test("Square API redirects are not followed with merchant credentials", async () => {

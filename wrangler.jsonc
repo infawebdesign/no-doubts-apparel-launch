@@ -3,10 +3,11 @@
   "name": "no-doubts-apparel-launchs",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
   "observability": {
     "enabled": true,
   },
+  "triggers": { "crons": ["17 * * * *"] },
   "vars": {
     "SQUARE_LOCATION_ID": "LRFYM2F3WGKG7",
     "SQUARE_MERCHANT_ID": "MLJY1JYR27C1Z",

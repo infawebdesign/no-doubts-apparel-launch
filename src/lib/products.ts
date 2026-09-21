@@ -1,8 +1,3 @@
-import tigerTee from "@/assets/tiger-tee.png";
-import snakeTee from "@/assets/snake-tee.png";
-import scriptTee from "@/assets/script-tee.png";
-import ogTee from "@/assets/og-tee.png";
-
 /**
  * Product shape mirrors what a Square Catalog item will provide.
  * When Square is connected, replace `products` with a loader that maps
@@ -12,6 +7,7 @@ export type ProductImage = {
   /** Image URL. Swap for final photography or Square image URLs later. */
   url: string | null;
   alt: string;
+  sizeGuide?: boolean;
 };
 
 export type Product = {
@@ -25,6 +21,7 @@ export type Product = {
   status: "available" | "coming-soon";
   /** Placeholder copy until final descriptions are supplied. */
   description: string;
+  coverImage: ProductImage;
   images: ProductImage[];
   /** Static fallback price (cents) used only when the live Square catalog is unreachable. */
   priceCents: number;
@@ -47,10 +44,24 @@ export const products: Product[] = [
     sizes: FALLBACK_SIZES,
     description:
       "Striking tiger design, reminding you to have no doubts and earn the total you worked for.",
+    coverImage: {
+      url: "/campaign/NoDoubtTigerBlood-Single-Male-Front-Full.webp",
+      alt: "On The Prowl Tee, male model front view",
+    },
     images: [
-      { url: tigerTee, alt: "On The Prowl Tee — Earn Your Total, front print" },
-      { url: null, alt: "Additional photography coming soon" },
-      { url: null, alt: "Additional photography coming soon" },
+      {
+        url: "/campaign/NoDoubtTigerBlood-Single-Female-Front-Full.webp",
+        alt: "On The Prowl Tee, female model front view",
+      },
+      {
+        url: "/campaign/NoDoubtTigerBlood-Single-Male-Side-Full.webp",
+        alt: "On The Prowl Tee, male model side view",
+      },
+      {
+        url: "/campaign/NoDoubtTigerBlood-Product-Front-Full-Web.webp",
+        alt: "On The Prowl Tee, front graphic detail",
+      },
+      { url: "/campaign/IMG_2675.webp", alt: "T-shirt size guide", sizeGuide: true },
     ],
   },
   {
@@ -65,10 +76,28 @@ export const products: Product[] = [
     sizes: FALLBACK_SIZES,
     description:
       "A strong, full back print reminding you to hit the standard with secondary ND logo on front.",
+    coverImage: {
+      url: "/campaign/NoDoubtSnake-Group-1-Full.webp",
+      alt: "The team wearing Strike tees",
+    },
     images: [
-      { url: "/snake-tee-front.png", alt: "Strike Tee — Hit The Standard, front print" },
-      { url: null, alt: "Additional photography coming soon" },
-      { url: null, alt: "Additional photography coming soon" },
+      {
+        url: "/campaign/NoDoubtSnake-Single-Female-Back-Full.webp",
+        alt: "Strike Tee, female model back view",
+      },
+      {
+        url: "/campaign/NoDoubtSnake-Single-Male-Front-Full.webp",
+        alt: "Strike Tee, male model front view",
+      },
+      {
+        url: "/campaign/NoDoubtSnake-Product-Back-Full.webp",
+        alt: "Strike Tee, back graphic detail",
+      },
+      {
+        url: "/campaign/NoDoubtSnake-Product-Breast-Full.webp",
+        alt: "Strike Tee, chest logo detail",
+      },
+      { url: "/campaign/IMG_2675.webp", alt: "T-shirt size guide", sizeGuide: true },
     ],
   },
   {
@@ -82,11 +111,26 @@ export const products: Product[] = [
     priceCents: 3000,
     sizes: FALLBACK_SIZES,
     description:
-      "Ode to a classic jersey look, \"Leave No Doubts\" with secondary ND logo on sleeve. Simple and sharp!",
+      'Ode to a classic jersey look, "Leave No Doubts" with secondary ND logo on sleeve. Simple and sharp!',
+    coverImage: {
+      url: "/campaign/NoDoubtVarsity-Group-Full.webp",
+      alt: "The team wearing Varsity tees",
+    },
     images: [
-      { url: scriptTee, alt: "Varsity Tee, front print" },
-      { url: null, alt: "Additional photography coming soon" },
-      { url: null, alt: "Additional photography coming soon" },
+      {
+        url: "/campaign/NoDoubtVarsity-Single-Male-Front-Full.webp",
+        alt: "Varsity Tee, male model front view",
+      },
+      { url: "/campaign/NoDoubtVarsity-Group-Full.webp", alt: "The team wearing Varsity tees" },
+      {
+        url: "/campaign/NoDoubtVarsity-Single-Female-Side-Full.webp",
+        alt: "Varsity Tee, female model side view",
+      },
+      {
+        url: "/campaign/NoDoubtVarsity-Product-Front-Full.webp",
+        alt: "Varsity Tee, front graphic detail",
+      },
+      { url: "/campaign/IMG_2675.webp", alt: "T-shirt size guide", sizeGuide: true },
     ],
   },
   {
@@ -101,16 +145,29 @@ export const products: Product[] = [
     sizes: FALLBACK_SIZES,
     description:
       "Our primary logo in a clean front print for those proud to rep the brand's mindset!",
+    coverImage: {
+      url: "/campaign/NoDoubtOG-Single-Male-Front-Alt-Full.webp",
+      alt: "OG Basic Tee, male model front view",
+    },
     images: [
-      { url: ogTee, alt: "OG No Doubts Basic Tee, front print" },
-      { url: null, alt: "Additional photography coming soon" },
-      { url: null, alt: "Additional photography coming soon" },
+      {
+        url: "/campaign/NoDoubtOG-Single-Female-Side-Full.webp",
+        alt: "OG Basic Tee, female model side view",
+      },
+      {
+        url: "/campaign/NoDoubtOG-Single-Male-Front-Alt-Full.webp",
+        alt: "OG Basic Tee, male model front view",
+      },
+      {
+        url: "/campaign/NoDoubtOG-Product-Front-Full.webp",
+        alt: "OG Basic Tee, front logo detail",
+      },
+      { url: "/campaign/IMG_2675.webp", alt: "T-shirt size guide", sizeGuide: true },
     ],
   },
 ];
 
-export const getProduct = (slug: string) =>
-  products.find((p) => p.slug === slug);
+export const getProduct = (slug: string) => products.find((p) => p.slug === slug);
 
 /** Format a Square price amount (cents) for display. */
 export const formatPrice = (priceCents: number | null | undefined) =>
