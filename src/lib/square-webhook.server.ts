@@ -137,10 +137,14 @@ export async function squareWebhookHandler(
   if (
     typeof event.event_id !== "string" ||
     !/^[A-Za-z0-9_-]{1,128}$/.test(event.event_id) ||
-    event.merchant_id !== settings.merchantId ||
+    typeof event.merchant_id !== "string" ||
     typeof event.type !== "string"
   )
     return paymentJson({ error: "Invalid event." }, 400);
+  // A Square application can serve more than one seller, and Square's test
+  // payload uses a generic merchant. Authenticated events for other merchants
+  // must be acknowledged without reading or changing this store's records.
+  if (event.merchant_id !== settings.merchantId) return paymentJson({ received: true });
   if (!EVENT_TYPES.has(event.type)) return paymentJson({ received: true });
 
   const inserted = await db
