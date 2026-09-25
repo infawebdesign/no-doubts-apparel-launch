@@ -76,7 +76,7 @@ function About() {
 
       {/* Credentials + Why No Doubts exists */}
       <section className="border-y border-border">
-        <div className="mx-auto grid max-w-[1600px] gap-px lg:grid-cols-2">
+        <div className="mx-auto grid max-w-[1600px] auto-rows-fr gap-px lg:grid-cols-2">
           {/* Left: interactive credential cards */}
           <div className="grid h-full gap-px divide-y divide-border border-border lg:grid-rows-1 lg:divide-y-0 lg:divide-x lg:border-r">
             {[
