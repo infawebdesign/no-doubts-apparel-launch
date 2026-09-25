@@ -78,7 +78,7 @@ function About() {
       <section className="border-y border-border">
         <div className="mx-auto grid max-w-[1600px] gap-px lg:grid-cols-2">
           {/* Left: interactive credential cards */}
-          <div className="grid gap-px divide-y divide-border border-border lg:divide-y-0 lg:divide-x lg:border-r">
+          <div className="grid h-full gap-px divide-y divide-border border-border lg:grid-rows-1 lg:divide-y-0 lg:divide-x lg:border-r">
             {[
               {
                 title: "Proudly Canadian Owned and Operated",
@@ -87,7 +87,7 @@ function About() {
             ].map((block, i, arr) => (
               <div
                 key={block.title}
-                className={`group relative bg-background p-8 transition-colors duration-300 hover:bg-muted ${
+                className={`group relative flex h-full flex-col justify-center bg-background p-8 transition-colors duration-300 hover:bg-muted ${
                   i < arr.length - 1 ? "lg:border-b lg:border-border" : ""
                 }`}
               >
