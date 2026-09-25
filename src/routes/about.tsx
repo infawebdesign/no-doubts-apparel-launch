@@ -7,6 +7,7 @@ import varsityGroup from "@/assets/team-NoDoubtVarsity-Group-Full.jpg";
 import renaissanceGroup from "@/assets/team-NoDoubtRenaissance-Group-Full.jpg";
 import allStylesGroup from "@/assets/team-NoDoubtAllStyles-Group-Full.jpg";
 import { ScrollMarquee } from "@/components/site/ScrollMarquee";
+import { Flag } from "lucide-react";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -101,6 +102,30 @@ function About() {
                 <p className="mt-4 text-sm text-muted-foreground transition-colors duration-300 group-hover:text-foreground">
                   {block.text}
                 </p>
+                <div className="mt-10 border border-bone/20 bg-ink p-5 transition-colors duration-300 group-hover:border-bone/40 sm:p-6">
+                  <div className="flex items-end justify-between gap-6">
+                    <div className="flex items-end gap-4">
+                      <Flag
+                        aria-hidden="true"
+                        strokeWidth={1.25}
+                        className="size-10 text-bone/70 sm:size-12"
+                      />
+                      <span className="display text-7xl leading-[0.72] text-bone sm:text-8xl">
+                        CA
+                      </span>
+                    </div>
+                    <p className="label max-w-44 text-right text-[0.625rem] leading-relaxed text-bone/65 sm:text-xs">
+                      Canadian owned
+                      <br />
+                      Made by Canadian suppliers
+                    </p>
+                  </div>
+                  <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    <span className="h-px bg-bone/20" />
+                    <span className="label text-[0.625rem] text-bone/60">Guelph, Ontario</span>
+                    <span className="h-px bg-bone/20" />
+                  </div>
+                </div>
                 <span className="absolute bottom-0 left-0 h-px w-0 bg-bone transition-all duration-500 group-hover:w-full" />
               </div>
             ))}
