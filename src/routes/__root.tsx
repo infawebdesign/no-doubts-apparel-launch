@@ -94,7 +94,46 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Graphic-led streetwear built on gym culture. Shop the first drop.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "No Doubts Apparel" },
+      {
+        property: "og:url",
+        content: "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/og.png",
+      },
+      {
+        property: "og:image:secure_url",
+        content:
+          "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/og.png",
+      },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1730" },
+      { property: "og:image:height", content: "909" },
+      {
+        property: "og:image:alt",
+        content:
+          "No Doubts Apparel campaign — Hit the standard. Earn your total.",
+      },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "No Doubts Apparel" },
+      {
+        name: "twitter:description",
+        content:
+          "Graphic-led streetwear built on gym culture. Shop the first drop.",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev/og.png",
+      },
+      {
+        name: "twitter:image:alt",
+        content:
+          "No Doubts Apparel campaign — Hit the standard. Earn your total.",
+      },
     ],
     links: [
       {
