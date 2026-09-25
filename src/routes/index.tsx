@@ -127,10 +127,10 @@ function Home() {
               You’re Capable of More than You Realize
             </h2>
             <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-              No Doubts Apparel was founded by Sarah and Francesco Catalano — powerlifters and meet
+              No Doubts Apparel was founded by Sarah and Francesco Catalano, powerlifters and meet
               directors from Guelph, Ontario with over a decade in the sport. Every design is built
               around the confidence that comes from putting in the work and trusting your
-              preparation — on the platform, in the gym, and out in the world.
+              preparation, on the platform, in the gym, and out in the world.
             </p>
             <Link
               to="/about"

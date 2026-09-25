@@ -80,14 +80,6 @@ function About() {
           <div className="grid gap-px divide-y divide-border border-border lg:divide-y-0 lg:divide-x lg:border-r">
             {[
               {
-                title: "10+ years",
-                text: "Competing on the platform and directing the meets where other lifters chase theirs.",
-              },
-              {
-                title: "Both sides of the platform",
-                text: "Competitors chasing PRs, and meet directors making sure others get their shot.",
-              },
-              {
                 title: "Proudly Canadian Owned and Operated",
                 text: "We are proud to share that our designs are created by humans, our imagery features real people, and we are completely manufactured by Canadian suppliers.",
               },
