@@ -78,6 +78,16 @@ function ShippingReturns() {
           </section>
 
           <section className="space-y-4">
+            <h2 className="display text-2xl sm:text-3xl">GST/HST</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Applicable GST or HST is calculated using the delivery province and applied to both
+              merchandise and shipping. No Doubts Apparel is registered to collect GST/HST only, so
+              we do not collect separate provincial sales tax, QST, or RST. The tax and final total
+              are shown before payment on the secure Square checkout page.
+            </p>
+          </section>
+
+          <section className="space-y-4">
             <h2 className="display text-2xl sm:text-3xl">Sizing</h2>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
               Please review the size chart carefully before placing your order. If you are between

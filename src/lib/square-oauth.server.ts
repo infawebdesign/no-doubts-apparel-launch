@@ -36,6 +36,7 @@ export type SquareEnv = {
   SQUARE_APP_ID: string | undefined;
   SQUARE_APP_SECRET: string | undefined;
   SQUARE_TOKEN_ENCRYPTION_KEY: string | undefined;
+  SQUARE_WEBHOOK_SIGNATURE_KEY?: string | undefined;
   SQUARE_LOCATION_ID: string | undefined;
   SQUARE_DB: D1Database | undefined;
   SQUARE_MERCHANT_ID?: string | undefined;
@@ -71,6 +72,7 @@ export async function getSquareEnv(): Promise<SquareEnv> {
     SQUARE_APP_ID: pick("SQUARE_APP_ID"),
     SQUARE_APP_SECRET: pick("SQUARE_APP_SECRET"),
     SQUARE_TOKEN_ENCRYPTION_KEY: pick("SQUARE_TOKEN_ENCRYPTION_KEY"),
+    SQUARE_WEBHOOK_SIGNATURE_KEY: pick("SQUARE_WEBHOOK_SIGNATURE_KEY"),
     SQUARE_LOCATION_ID: pick("SQUARE_LOCATION_ID"),
     SQUARE_MERCHANT_ID: pick("SQUARE_MERCHANT_ID"),
     SQUARE_ENVIRONMENT: pick("SQUARE_ENVIRONMENT"),
@@ -194,7 +196,9 @@ type TokenRow = {
   expires_at: string | null;
 };
 
-const REFRESH_BUFFER_MS = 24 * 60 * 60 * 1000; // refresh 24h before expiry
+// Square recommends renewing OAuth credentials at least every seven days. Its
+// access tokens last 30 days, so refresh once 23 days or less remain.
+const REFRESH_BUFFER_MS = 23 * 24 * 60 * 60 * 1000;
 
 function isExpiring(expiresAt: string | null): boolean {
   if (!expiresAt) return true;

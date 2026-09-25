@@ -34,7 +34,9 @@ export async function maintainPayments(env: SquareEnv, now = Date.now()) {
   if (!credentials.ok) throw new Error("Scheduled Square credential check failed");
   // Pull authenticated Square state even when the buyer never returns. Bounded
   // batches rotate oldest checks first and also pick up refunds after payment.
-  for (let i = 0; i < 5; i++) {
+  // Webhooks provide the fast path; this bounded sweep is the independent
+  // recovery path for missed deliveries, refunds, and buyer drop-off.
+  for (let i = 0; i < 25; i++) {
     const row = await db
       .prepare(
         "SELECT attempt_id FROM checkout_attempts WHERE order_id IS NOT NULL AND (checked_at IS NULL OR checked_at < ?) ORDER BY COALESCE(checked_at, 0), created_at LIMIT 1",

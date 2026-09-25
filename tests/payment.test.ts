@@ -30,6 +30,7 @@ import { squareJson, PaymentError } from "../src/lib/square-config.server.ts";
 import { redactCheckout, verifyStoredShipping } from "../src/lib/checkout-privacy.server.ts";
 import { maintainPayments } from "../src/lib/payment-maintenance.server.ts";
 import { securityHeaders } from "../src/lib/security-headers.ts";
+import { verifySquareWebhookSignature } from "../src/lib/square-webhook.server.ts";
 
 let sql: DatabaseSync;
 let env: SquareEnv;
@@ -54,6 +55,30 @@ const shipping = {
   country: "CA",
   method: "regular",
 };
+
+test("Square webhook signature binds the notification URL and exact body", async () => {
+  const url = `${origin}/api/square/webhook`;
+  const body = JSON.stringify({ event_id: "event-1", type: "payment.updated" });
+  const keyValue = "webhook-signature-key";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(keyValue),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const bytes = new Uint8Array(
+    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(url + body)),
+  );
+  const signature = Buffer.from(bytes).toString("base64");
+  assert.equal(await verifySquareWebhookSignature(url, body, signature, keyValue), true);
+  assert.equal(await verifySquareWebhookSignature(url, `${body} `, signature, keyValue), false);
+  assert.equal(
+    await verifySquareWebhookSignature(`${origin}/wrong`, body, signature, keyValue),
+    false,
+  );
+  assert.equal(await verifySquareWebhookSignature(url, body, "not-base64", keyValue), false);
+});
 const dbAdapter = (): D1Database => ({
   prepare(query) {
     let args: any[] = [];
@@ -76,7 +101,7 @@ const dbAdapter = (): D1Database => ({
 
 async function addToken(
   merchant = "merchant",
-  expiry = new Date(Date.now() + 10 * 86400000).toISOString(),
+  expiry = new Date(Date.now() + 29 * 86400000).toISOString(),
 ) {
   const key = await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY!);
   const access = await encryptToken(key, `token-${merchant}`);
@@ -95,6 +120,9 @@ beforeEach(async () => {
   );
   sql.exec(
     readFileSync(new URL("../migrations/0002_payment_maintenance.sql", import.meta.url), "utf8"),
+  );
+  sql.exec(
+    readFileSync(new URL("../migrations/0003_square_webhook_events.sql", import.meta.url), "utf8"),
   );
   sql.exec(`CREATE TABLE square_oauth_tokens (merchant_id TEXT PRIMARY KEY, access_token_ciphertext TEXT,
     access_token_iv TEXT, refresh_token_ciphertext TEXT, refresh_token_iv TEXT, expires_at TEXT, updated_at TEXT)`);

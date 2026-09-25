@@ -13,12 +13,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ShippingReturnsRouteImport } from './routes/shipping-returns'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as ApiSquareCheckoutRouteImport } from './routes/api/square/checkout'
 import { Route as ApiSquareProductsRouteImport } from './routes/api/square/products'
 import { Route as ApiSquareStatusRouteImport } from './routes/api/square/status'
+import { Route as ApiSquareWebhookRouteImport } from './routes/api/square/webhook'
 import { Route as ApiSquareOauthCallbackRouteImport } from './routes/api/square/oauth/callback'
 import { Route as ApiSquareOauthStartRouteImport } from './routes/api/square/oauth/start'
 
@@ -40,6 +42,11 @@ const ContactRoute = ContactRouteImport.update({
 const OrderConfirmedRoute = OrderConfirmedRouteImport.update({
   id: '/order-confirmed',
   path: '/order-confirmed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShippingReturnsRoute = ShippingReturnsRouteImport.update({
@@ -72,6 +79,11 @@ const ApiSquareStatusRoute = ApiSquareStatusRouteImport.update({
   path: '/api/square/status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSquareWebhookRoute = ApiSquareWebhookRouteImport.update({
+  id: '/api/square/webhook',
+  path: '/api/square/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSquareOauthCallbackRoute = ApiSquareOauthCallbackRouteImport.update({
   id: '/api/square/oauth/callback',
   path: '/api/square/oauth/callback',
@@ -88,12 +100,14 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/order-confirmed': typeof OrderConfirmedRoute
+  '/privacy': typeof PrivacyRoute
   '/shipping-returns': typeof ShippingReturnsRoute
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/checkout': typeof ApiSquareCheckoutRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/status': typeof ApiSquareStatusRoute
+  '/api/square/webhook': typeof ApiSquareWebhookRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
   '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
 }
@@ -102,12 +116,14 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/order-confirmed': typeof OrderConfirmedRoute
+  '/privacy': typeof PrivacyRoute
   '/shipping-returns': typeof ShippingReturnsRoute
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/checkout': typeof ApiSquareCheckoutRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/status': typeof ApiSquareStatusRoute
+  '/api/square/webhook': typeof ApiSquareWebhookRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
   '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
 }
@@ -117,12 +133,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/order-confirmed': typeof OrderConfirmedRoute
+  '/privacy': typeof PrivacyRoute
   '/shipping-returns': typeof ShippingReturnsRoute
   '/shop': typeof ShopRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/square/checkout': typeof ApiSquareCheckoutRoute
   '/api/square/products': typeof ApiSquareProductsRoute
   '/api/square/status': typeof ApiSquareStatusRoute
+  '/api/square/webhook': typeof ApiSquareWebhookRoute
   '/api/square/oauth/callback': typeof ApiSquareOauthCallbackRoute
   '/api/square/oauth/start': typeof ApiSquareOauthStartRoute
 }
@@ -133,12 +151,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/contact'
     | '/order-confirmed'
+    | '/privacy'
     | '/shipping-returns'
     | '/shop'
     | '/product/$slug'
     | '/api/square/checkout'
     | '/api/square/products'
     | '/api/square/status'
+    | '/api/square/webhook'
     | '/api/square/oauth/callback'
     | '/api/square/oauth/start'
   fileRoutesByTo: FileRoutesByTo
@@ -147,12 +167,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/contact'
     | '/order-confirmed'
+    | '/privacy'
     | '/shipping-returns'
     | '/shop'
     | '/product/$slug'
     | '/api/square/checkout'
     | '/api/square/products'
     | '/api/square/status'
+    | '/api/square/webhook'
     | '/api/square/oauth/callback'
     | '/api/square/oauth/start'
   id:
@@ -161,12 +183,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/contact'
     | '/order-confirmed'
+    | '/privacy'
     | '/shipping-returns'
     | '/shop'
     | '/product/$slug'
     | '/api/square/checkout'
     | '/api/square/products'
     | '/api/square/status'
+    | '/api/square/webhook'
     | '/api/square/oauth/callback'
     | '/api/square/oauth/start'
   fileRoutesById: FileRoutesById
@@ -176,12 +200,14 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   ContactRoute: typeof ContactRoute
   OrderConfirmedRoute: typeof OrderConfirmedRoute
+  PrivacyRoute: typeof PrivacyRoute
   ShippingReturnsRoute: typeof ShippingReturnsRoute
   ShopRoute: typeof ShopRoute
   ProductSlugRoute: typeof ProductSlugRoute
   ApiSquareCheckoutRoute: typeof ApiSquareCheckoutRoute
   ApiSquareProductsRoute: typeof ApiSquareProductsRoute
   ApiSquareStatusRoute: typeof ApiSquareStatusRoute
+  ApiSquareWebhookRoute: typeof ApiSquareWebhookRoute
   ApiSquareOauthCallbackRoute: typeof ApiSquareOauthCallbackRoute
   ApiSquareOauthStartRoute: typeof ApiSquareOauthStartRoute
 }
@@ -214,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/order-confirmed'
       fullPath: '/order-confirmed'
       preLoaderRoute: typeof OrderConfirmedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shipping-returns': {
@@ -258,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSquareStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/square/webhook': {
+      id: '/api/square/webhook'
+      path: '/api/square/webhook'
+      fullPath: '/api/square/webhook'
+      preLoaderRoute: typeof ApiSquareWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/square/oauth/callback': {
       id: '/api/square/oauth/callback'
       path: '/api/square/oauth/callback'
@@ -280,12 +320,14 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   ContactRoute: ContactRoute,
   OrderConfirmedRoute: OrderConfirmedRoute,
+  PrivacyRoute: PrivacyRoute,
   ShippingReturnsRoute: ShippingReturnsRoute,
   ShopRoute: ShopRoute,
   ProductSlugRoute: ProductSlugRoute,
   ApiSquareCheckoutRoute: ApiSquareCheckoutRoute,
   ApiSquareProductsRoute: ApiSquareProductsRoute,
   ApiSquareStatusRoute: ApiSquareStatusRoute,
+  ApiSquareWebhookRoute: ApiSquareWebhookRoute,
   ApiSquareOauthCallbackRoute: ApiSquareOauthCallbackRoute,
   ApiSquareOauthStartRoute: ApiSquareOauthStartRoute,
 }

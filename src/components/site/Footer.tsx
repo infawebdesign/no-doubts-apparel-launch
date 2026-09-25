@@ -3,13 +3,10 @@ import { Link } from "@tanstack/react-router";
 export function Footer() {
   return (
     <footer className="border-t border-border">
-      
       <div className="mx-auto grid max-w-[1600px] gap-10 px-4 py-14 sm:px-8 md:grid-cols-[minmax(0,1fr)_auto]">
         <div>
           <p className="display text-4xl sm:text-6xl">No&nbsp;Doubts Apparel</p>
-          <p className="label mt-4 text-muted-foreground">
-            Checkout handled securely by Square
-          </p>
+          <p className="label mt-4 text-muted-foreground">Checkout handled securely by Square</p>
         </div>
         <div className="grid grid-cols-2 gap-10 sm:gap-16">
           <div className="space-y-3">
@@ -26,18 +23,14 @@ export function Footer() {
           </div>
           <div className="space-y-3">
             <p className="label text-muted-foreground">Info</p>
-            <Link
-              to="/shipping-returns"
-              className="block text-sm hover:text-bone"
-            >
+            <Link to="/shipping-returns" className="block text-sm hover:text-bone">
               Shipping &amp; Returns
             </Link>
-            <p className="text-sm text-muted-foreground">
-              Canada-only shipping
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Regular Parcel $15 / Xpresspost $20
-            </p>
+            <Link to="/privacy" className="block text-sm hover:text-bone">
+              Privacy
+            </Link>
+            <p className="text-sm text-muted-foreground">Canada-only shipping</p>
+            <p className="text-sm text-muted-foreground">Regular Parcel $15 / Xpresspost $20</p>
           </div>
         </div>
       </div>
