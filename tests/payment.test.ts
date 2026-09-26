@@ -224,10 +224,13 @@ beforeEach(async () => {
       order.line_items = body.order.line_items.map((charge: any) => ({
         ...charge,
         total_tax_money: {
-          amount: Math.round(
-            ((charge.base_price_money?.amount ?? 3000) * Number(body.order.taxes[0].percentage)) /
-              100,
-          ),
+          amount: charge.applied_taxes?.length
+            ? Math.round(
+                ((charge.base_price_money?.amount ?? 3000) *
+                  Number(body.order.taxes[0].percentage)) /
+                  100,
+              )
+            : 0,
           currency: "CAD",
         },
       }));
@@ -284,12 +287,18 @@ test("prices come from catalog references; injected totals are ignored", async (
   assert.equal(response.status, 200);
   assert.deepEqual(
     created()[0]!.body.order.line_items.filter((line: any) => line.uid !== "shipping"),
-    [{ catalog_object_id: "variation-m", quantity: "1" }],
+    [
+      {
+        catalog_object_id: "variation-m",
+        quantity: "1",
+        applied_taxes: [{ tax_uid: "destination-tax" }],
+      },
+    ],
   );
   assert.equal(created()[0]!.body.order.pricing_options.auto_apply_taxes, false);
 });
 
-test("shipping is charged once and receives explicit destination tax", async () => {
+test("shipping is charged once at a tax-inclusive flat rate", async () => {
   for (const method of ["regular", "xpresspost"] as const) {
     assert.equal(
       (
@@ -307,7 +316,9 @@ test("shipping is charged once and receives explicit destination tax", async () 
     assert.equal(charge.quantity, "1");
     assert.equal(request.order.service_charges, undefined);
     assert.equal(request.order.taxes[0].percentage, "13");
-    assert.equal(request.order.taxes[0].scope, "ORDER");
+    assert.equal(request.order.taxes[0].scope, "LINE_ITEM");
+    assert.deepEqual(request.order.line_items[0].applied_taxes, [{ tax_uid: "destination-tax" }]);
+    assert.equal(charge.applied_taxes, undefined);
     assert.equal(request.checkout_options.ask_for_shipping_address, false);
     assert.equal(request.checkout_options.shipping_fee, undefined);
     assert.equal(request.order.fulfillments[0].type, "SHIPMENT");
@@ -315,7 +326,7 @@ test("shipping is charged once and receives explicit destination tax", async () 
   }
 });
 
-test("GST/HST rates cover all destinations and tax both shipping options", () => {
+test("GST/HST rates cover all destinations while shipping remains tax-inclusive", () => {
   const expected = {
     AB: 5,
     BC: 5,
@@ -337,8 +348,8 @@ test("GST/HST rates cover all destinations and tax both shipping options", () =>
     assert.equal(fields.taxes[0]!.percentage, String(rate));
     assert.equal(fields.taxes.length, 1);
   }
-  assert.equal(Math.round((6000 + 1500) * 1.13), 8475);
-  assert.equal(Math.round((6000 + 2000) * 1.13), 9040);
+  assert.equal(6000 + 1500 + Math.round(6000 * 0.13), 8280);
+  assert.equal(6000 + 2000 + Math.round(6000 * 0.13), 8780);
 });
 
 test("invalid, foreign, or mismatched destinations cannot create payment links", async () => {
@@ -371,7 +382,7 @@ test("retry cannot reuse an order after its shipping method or address changes",
   );
   assert.equal(created().length, 1);
 });
-test("shipping verification rejects missing tax, duplicate fees and changed destination", async () => {
+test("shipping verification rejects added shipping tax, duplicate fees and changed destination", async () => {
   const id = crypto.randomUUID();
   await checkout(id);
   const expected = shippingOrderFields(parseShipping(shipping)!);
@@ -381,7 +392,7 @@ test("shipping verification rejects missing tax, duplicate fees and changed dest
   assert.equal(hasExpectedShipping(contactEdit, expected), true);
   for (const mutate of [
     (o: any) => {
-      o.line_items.find((l: any) => l.uid === "shipping").total_tax_money.amount = 0;
+      o.line_items.find((l: any) => l.uid === "shipping").total_tax_money.amount = 1;
     },
     (o: any) => {
       o.line_items.find((l: any) => l.uid === "shipping").quantity = "2";
@@ -403,7 +414,7 @@ test("shipping verification rejects missing tax, duplicate fees and changed dest
     mutate(modified);
     assert.equal(hasExpectedShipping(modified, expected), false);
   }
-  order.line_items.find((l: any) => l.uid === "shipping").total_tax_money.amount = 0;
+  order.line_items.find((l: any) => l.uid === "shipping").total_tax_money.amount = 1;
   assert.equal((await status(id)).status, 503);
 });
 

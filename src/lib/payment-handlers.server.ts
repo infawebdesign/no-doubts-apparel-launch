@@ -157,14 +157,16 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
                 ? { catalog_version: byId.get(line.variationId)!.version }
                 : {}),
               quantity: String(line.quantity),
+              applied_taxes: [{ tax_uid: "destination-tax" }],
             })),
             ...shippingOrderFields(shipping).line_items,
           ],
           metadata: { shipping_fingerprint: shippingFingerprint },
         },
         checkout_options: {
-          // Address and taxable shipping are already fixed on the order. Asking
-          // again lets hosted checkout replace the address without repricing tax.
+          // Address and tax-inclusive shipping are already fixed on the order.
+          // Asking again lets hosted checkout replace the address without
+          // repricing merchandise tax.
           ask_for_shipping_address: false,
           enable_coupon: false,
           enable_loyalty: false,

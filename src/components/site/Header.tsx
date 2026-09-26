@@ -333,8 +333,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                     <span>I checked this address and confirm it is correct.</span>
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Square and digital wallets include shipping in the order subtotal. The final
-                    total includes shipping and GST/HST.
+                    Square and digital wallets include shipping in the order subtotal. Shipping is
+                    tax-inclusive; GST/HST is added only to merchandise.
                   </p>
                 </div>
               )}
@@ -358,16 +358,10 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                   <div className="flex justify-between">
                     <span>
                       {PROVINCES[shipping.province][1] === 5 ? "GST" : "HST"} (
-                      {PROVINCES[shipping.province][1]}%, including shipping)
+                      {PROVINCES[shipping.province][1]}%, merchandise only)
                     </span>
                     <span>
-                      {formatPrice(
-                        Math.round(
-                          ((subtotal + SHIPPING_METHODS[shipping.method].amount) *
-                            PROVINCES[shipping.province][1]) /
-                            100,
-                        ),
-                      )}
+                      {formatPrice(Math.round((subtotal * PROVINCES[shipping.province][1]) / 100))}
                     </span>
                   </div>
                   <div className="flex justify-between font-semibold">
@@ -376,11 +370,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                       {formatPrice(
                         subtotal +
                           SHIPPING_METHODS[shipping.method].amount +
-                          Math.round(
-                            ((subtotal + SHIPPING_METHODS[shipping.method].amount) *
-                              PROVINCES[shipping.province][1]) /
-                              100,
-                          ),
+                          Math.round((subtotal * PROVINCES[shipping.province][1]) / 100),
                       )}
                     </span>
                   </div>

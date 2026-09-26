@@ -99,7 +99,10 @@ export function shippingOrderFields(s: Shipping) {
         name: rate === 5 ? "GST" : "HST",
         percentage: String(rate),
         type: "ADDITIVE",
-        scope: "ORDER",
+        // The merchant's flat shipping prices include the tax they will remit.
+        // Apply this tax only to merchandise so checkout never adds tax above
+        // the advertised $15 / $20 shipping charge.
+        scope: "LINE_ITEM",
       },
     ],
     line_items: [
@@ -157,6 +160,7 @@ export function hasExpectedShipping(
       name?: string;
       base_price_money?: { amount?: number; currency?: string };
       total_tax_money?: { amount?: number; currency?: string };
+      applied_taxes?: { tax_uid?: string }[];
     }[];
     fulfillments?: {
       type?: string;
@@ -169,12 +173,13 @@ export function hasExpectedShipping(
   const tax = expected.taxes[0]!,
     charge = expected.line_items.find((line) => line.uid === "shipping")!;
   const shippingLines = actual.line_items?.filter((line) => line.uid === "shipping") ?? [];
+  const merchandiseLines = actual.line_items?.filter((line) => line.uid !== "shipping") ?? [];
   const actualCharge = shippingLines[0];
   if (
     actual.taxes?.length !== 1 ||
     Number(actual.taxes[0]?.percentage) !== Number(tax.percentage) ||
     actual.taxes[0]?.type !== "ADDITIVE" ||
-    actual.taxes[0]?.scope !== "ORDER" ||
+    actual.taxes[0]?.scope !== "LINE_ITEM" ||
     // Hosted checkout adds the included-shipping profile after link creation.
     // Accept only its single, strictly zero CAD charge; reject extra charges.
     (actual.service_charges?.length ?? 0) > 1 ||
@@ -191,9 +196,14 @@ export function hasExpectedShipping(
     actualCharge?.name !== charge.name ||
     actualCharge.base_price_money?.amount !== charge.base_price_money.amount ||
     actualCharge.base_price_money.currency !== "CAD" ||
-    actualCharge.total_tax_money?.amount !==
-      Math.round((charge.base_price_money.amount * Number(tax.percentage)) / 100) ||
+    (actualCharge.applied_taxes?.length ?? 0) !== 0 ||
+    actualCharge.total_tax_money?.amount !== 0 ||
     actualCharge.total_tax_money.currency !== "CAD" ||
+    merchandiseLines.length === 0 ||
+    merchandiseLines.some(
+      (line) =>
+        line.applied_taxes?.length !== 1 || line.applied_taxes[0]?.tax_uid !== "destination-tax",
+    ) ||
     actual.fulfillments?.length !== 1 ||
     actual.fulfillments[0]?.type !== "SHIPMENT" ||
     actual.fulfillments[0]?.shipment_details?.shipping_type !==

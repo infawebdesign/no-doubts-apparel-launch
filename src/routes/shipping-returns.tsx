@@ -75,15 +75,19 @@ function ShippingReturns() {
               based on Canada Post’s standard service windows and may occasionally vary due to
               weather, high shipping volumes, or remote delivery areas.
             </p>
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              The advertised $15 and $20 shipping rates include applicable GST/HST, so no additional
+              tax is added to the shipping charge at checkout.
+            </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="display text-2xl sm:text-3xl">GST/HST</h2>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Applicable GST or HST is calculated using the delivery province and applied to both
-              merchandise and shipping. No Doubts Apparel is registered to collect GST/HST only, so
-              we do not collect separate provincial sales tax, QST, or RST. The tax and final total
-              are shown before payment on the secure Square checkout page.
+              Applicable GST or HST is calculated using the delivery province and added to
+              merchandise. Shipping prices are tax-inclusive. No Doubts Apparel is registered to
+              collect GST/HST only, so we do not collect separate provincial sales tax, QST, or RST.
+              The tax and final total are shown before payment on the secure Square checkout page.
             </p>
           </section>
 
