@@ -167,6 +167,11 @@ export function publicStore(store: Awaited<ReturnType<typeof loadStore>>, locati
           priceAmount: detail.amount,
           currency: "CAD",
           inStock: detail.inStock,
+          availableQuantity: !detail.inStock
+            ? 0
+            : detail.quantity === null
+              ? null
+              : Math.floor(detail.quantity),
         },
       ];
     }),

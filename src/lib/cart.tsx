@@ -10,6 +10,7 @@ import {
 } from "react";
 import { MAX_QTY_PER_LINE, parseCart, type PaymentLine } from "./payment-contract";
 import { fetchSquareCatalog } from "./square-catalog";
+import { stockLimit } from "./cart-stock";
 import { getProduct } from "./products";
 
 /**
@@ -29,6 +30,7 @@ export type CartLine = {
   /** Live Square price in cents. */
   priceAmount: number | null;
   currency: string;
+  availableQuantity?: number | null | undefined;
   imageUrl: string | null;
   imageAlt: string;
 };
@@ -58,28 +60,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
         item.variations.map((variation) => [variation.id, variation] as const),
       ),
     );
-    const next = currentLines.current.map((line) => {
-      const variation = variations.get(line.squareVariationId);
-      const product = getProduct(line.slug);
-      return {
-        ...line,
-        priceAmount: variation?.inStock ? variation.priceAmount : null,
-        imageUrl: product?.coverImage.url ?? line.imageUrl,
-        imageAlt: product?.coverImage.alt ?? line.imageAlt,
-      };
-    });
-    const changed = next.some(
-      (line, i) => line.priceAmount !== currentLines.current[i]?.priceAmount,
+    const update = (current: CartLine[]) =>
+      current.map((line) => {
+        const variation = variations.get(line.squareVariationId);
+        const product = getProduct(line.slug);
+        const availableQuantity = variation?.inStock ? variation.availableQuantity : 0;
+        const priceAmount = variation?.inStock ? variation.priceAmount : null;
+        return {
+          ...line,
+          priceAmount,
+          availableQuantity,
+          imageUrl: product?.coverImage.url ?? line.imageUrl,
+          imageAlt: product?.coverImage.alt ?? line.imageAlt,
+        };
+      });
+    const before = currentLines.current;
+    const refreshed = update(before);
+    const changed = refreshed.some(
+      (line, i) =>
+        line.priceAmount !== before[i]?.priceAmount ||
+        line.availableQuantity !== before[i]?.availableQuantity ||
+        line.quantity > stockLimit(line.availableQuantity),
     );
-    if (
-      changed ||
-      next.some(
-        (line, i) =>
-          line.imageUrl !== currentLines.current[i]?.imageUrl ||
-          line.imageAlt !== currentLines.current[i]?.imageAlt,
-      )
-    )
-      setLines(next);
+    // Merge into the latest cart so an in-flight refresh cannot restore removed items.
+    setLines(update);
     return changed;
   }, []);
 
@@ -129,7 +133,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLines((prev) => {
       const existing = prev.find((l) => l.squareVariationId === line.squareVariationId);
       if (existing) {
-        const nextQuantity = Math.min(MAX_QTY_PER_LINE, existing.quantity + quantity);
+        const availableQuantity =
+          line.availableQuantity === undefined
+            ? existing.availableQuantity
+            : line.availableQuantity;
+        const nextQuantity =
+          quantity > 0
+            ? Math.min(stockLimit(availableQuantity), existing.quantity + quantity)
+            : existing.quantity + quantity;
+        if (quantity > 0 && nextQuantity <= existing.quantity) return prev;
         return prev
           .map((l) =>
             l.squareVariationId === line.squareVariationId
@@ -142,9 +154,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           )
           .filter((l) => l.quantity > 0);
       }
-      if (quantity <= 0) return prev;
+      if (quantity <= 0 || stockLimit(line.availableQuantity) === 0) return prev;
       if (prev.length >= 20) return prev;
-      return [...prev, { ...line, quantity: Math.min(MAX_QTY_PER_LINE, quantity) }];
+      return [
+        ...prev,
+        { ...line, quantity: Math.min(stockLimit(line.availableQuantity), quantity) },
+      ];
     });
   }, []);
 

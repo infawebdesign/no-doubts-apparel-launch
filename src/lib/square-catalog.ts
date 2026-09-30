@@ -10,6 +10,7 @@ export type SquareVariation = {
   priceAmount: number | null;
   currency: string | null;
   inStock: boolean;
+  availableQuantity: number | null;
 };
 
 export type SquareItem = {

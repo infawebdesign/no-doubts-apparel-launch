@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { prepareCheckout } from "@/lib/checkout-attempt";
 import { parseShipping, PROVINCES, SHIPPING_METHODS } from "@/lib/shipping";
 import { ShippingFields, emptyShipping, type ShippingDraft } from "./ShippingFields";
-import { MAX_QTY_PER_LINE, squareCheckoutUrl } from "@/lib/payment-contract";
+import { squareCheckoutUrl } from "@/lib/payment-contract";
 import { Menu, X, ShoppingBag, Minus, Plus, Trash2 } from "lucide-react";
+import { stockLimit, stockMessage } from "@/lib/cart-stock";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
@@ -18,7 +19,7 @@ const nav = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const { count, lines, addLine, removeLine } = useCart();
+  const { count } = useCart();
 
   return (
     <header className="absolute inset-x-0 top-0 z-50">
@@ -108,7 +109,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
         if (active) setCatalogReady(true);
       })
       .catch(() => {
-        if (active) setError("We couldn’t refresh prices. Close and reopen your bag to retry.");
+        if (active)
+          setError("We couldn’t refresh prices and stock. Close and reopen your bag to retry.");
       })
       .finally(() => {
         if (active) setRefreshing(false);
@@ -125,7 +127,13 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
     !refreshing &&
     catalogReady &&
     lines.length > 0 &&
-    lines.every((line) => line.squareVariationId && line.quantity > 0 && line.priceAmount !== null);
+    lines.every(
+      (line) =>
+        line.squareVariationId &&
+        line.quantity > 0 &&
+        line.priceAmount !== null &&
+        line.quantity <= stockLimit(line.availableQuantity),
+    );
 
   const handleCheckout = async () => {
     if (!canCheckout || checkoutBusy.current) return;
@@ -182,6 +190,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
       };
 
       if (!res.ok || !squareCheckoutUrl(data.checkoutUrl)) {
+        if (res.status === 409) await refreshPrices().catch(() => undefined);
         throw new Error(data.error || "Checkout failed");
       }
 
@@ -229,6 +238,25 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                     <p className="label mt-0.5 text-xs text-muted-foreground uppercase">
                       Size {line.size}
                     </p>
+                    {catalogReady &&
+                      line.availableQuantity !== null &&
+                      line.availableQuantity !== undefined && (
+                        <p
+                          className={
+                            line.quantity > stockLimit(line.availableQuantity)
+                              ? "mt-2 text-sm text-red-400"
+                              : "mt-2 text-xs text-muted-foreground"
+                          }
+                          role="status"
+                        >
+                          {stockMessage(
+                            line.name,
+                            line.size,
+                            line.quantity,
+                            line.availableQuantity,
+                          )}
+                        </p>
+                      )}
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
@@ -242,6 +270,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                             slug: line.slug,
                             size: line.size,
                             priceAmount: line.priceAmount,
+                            availableQuantity: line.availableQuantity,
                             currency: line.currency,
                             imageUrl: line.imageUrl,
                             imageAlt: line.imageAlt,
@@ -258,7 +287,11 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                       <button
                         type="button"
                         aria-label="Increase quantity"
-                        disabled={line.quantity >= MAX_QTY_PER_LINE || submitting}
+                        disabled={
+                          line.quantity >= stockLimit(line.availableQuantity) ||
+                          submitting ||
+                          refreshing
+                        }
                         onClick={() =>
                           addLine({
                             squareItemId: line.squareItemId,
@@ -267,6 +300,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                             slug: line.slug,
                             size: line.size,
                             priceAmount: line.priceAmount,
+                            availableQuantity: line.availableQuantity,
                             currency: line.currency,
                             imageUrl: line.imageUrl,
                             imageAlt: line.imageAlt,
@@ -378,7 +412,11 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
               )}
             </div>
           )}
-          {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+          {error && (
+            <p role="alert" className="mb-3 text-sm text-red-400">
+              {error}
+            </p>
+          )}
           <button
             type="button"
             disabled={!canCheckout}
@@ -388,7 +426,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
             }`}
           >
             {refreshing
-              ? "Checking prices…"
+              ? "Checking prices and stock…"
               : submitting
                 ? "Redirecting..."
                 : `Checkout ${count > 0 ? `(${count})` : ""}`}

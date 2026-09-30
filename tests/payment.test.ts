@@ -1,3 +1,4 @@
+import { stockLimit, stockMessage } from "../src/lib/cart-stock.ts";
 /* eslint-disable @typescript-eslint/no-explicit-any -- Deliberately malformed external API fixtures exercise validation. */
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
@@ -820,4 +821,53 @@ test("Square API redirects are not followed with merchant credentials", async ()
   };
   await assert.rejects(squareJson(env, "test-token", "/v2/locations/location"), PaymentError);
   assert.equal(requests, 1);
+});
+
+test("catalog exposes sellable quantities, including untracked and sold-out stock", async () => {
+  const catalog = async () =>
+    (await (await productsHandler(new Request(origin + "/api/square/products"), env)).json())
+      .items[0].variations[0];
+  stock[0].quantity = "2";
+  assert.equal((await catalog()).availableQuantity, 2);
+  objects[0].item_data!.variations![0].item_variation_data!.track_inventory = false;
+  assert.equal((await catalog()).availableQuantity, null);
+  objects[0].item_data!.variations![0].item_variation_data!.location_overrides = [
+    { location_id: "location", sold_out: true },
+  ];
+  assert.equal((await catalog()).availableQuantity, 0);
+});
+
+test("three requested with two available identifies the exact variation and correction", async () => {
+  stock[0].quantity = "2";
+  const response = await checkout(undefined, [{ ...item, quantity: 3 }]);
+  assert.equal(response.status, 409);
+  const data = await response.json();
+  assert.ok(data.error.includes("Earn Your Total / M"));
+  assert.match(data.error, /Reduce your quantity from 3 to 2/);
+  assert.equal(data.stockIssues[0].variationId, item.variationId);
+  assert.equal(data.stockIssues[0].availableQuantity, 2);
+  assert.equal(created().length, 0);
+  assert.equal((await checkout(undefined, [{ ...item, quantity: 2 }])).status, 200);
+});
+
+test("saved checkout links recheck stock before returning a redirect", async () => {
+  const id = crypto.randomUUID();
+  assert.equal((await checkout(id, [{ ...item, quantity: 3 }])).status, 200);
+  stock[0].quantity = "2";
+  const response = await checkout(id, [{ ...item, quantity: 3 }]);
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).stockIssues[0].availableQuantity, 2);
+  assert.equal(created().length, 1);
+});
+
+test("cart stock limits fail closed until refreshed and retain untracked item limits", () => {
+  assert.equal(stockLimit(undefined), 0);
+  assert.equal(stockLimit(null), 10);
+  assert.equal(stockLimit(2), 2);
+  assert.equal(stockLimit(0), 0);
+  assert.equal(stockLimit(-2), 0);
+  assert.equal(stockLimit(2.5), 2);
+  assert.equal(stockLimit(NaN), 0);
+  assert.match(stockMessage("Shirt", "M", 3, 2), /Reduce your quantity from 3 to 2/);
+  assert.match(stockMessage("Shirt", "M", 1, 0), /remove it from your bag/);
 });

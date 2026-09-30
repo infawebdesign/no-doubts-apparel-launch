@@ -4,6 +4,7 @@
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "routes": [{ "pattern": "nodoubts.ca", "custom_domain": true }],
   "observability": {
     "enabled": true,
   },
@@ -12,7 +13,7 @@
     "SQUARE_LOCATION_ID": "LRFYM2F3WGKG7",
     "SQUARE_MERCHANT_ID": "MLJY1JYR27C1Z",
     "SQUARE_ENVIRONMENT": "production",
-    "PUBLIC_SITE_URL": "https://no-doubts-apparel-launchs.misty-poetry-98f7.workers.dev",
+    "PUBLIC_SITE_URL": "https://nodoubts.ca",
   },
   "d1_databases": [
     {

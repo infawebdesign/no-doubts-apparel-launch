@@ -1,3 +1,4 @@
+import { stockMessage } from "./cart-stock.ts";
 import { parseCart, validAttempt, squareCheckoutUrl } from "./payment-contract.ts";
 import { parseShipping, shippingOrderFields, hasExpectedShipping } from "./shipping.ts";
 import { redactCheckout, verifyStoredShipping } from "./checkout-privacy.server.ts";
@@ -120,9 +121,40 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
       );
     }
     const token = await access(env);
+    // Recheck inventory even when returning an existing checkout link.
+    const store = await loadStore(env, token);
+    const byId = new Map(store.variations.map((v) => [v.id, v]));
+    const shortages = cart.flatMap((line) => {
+      const variation = byId.get(line.variationId);
+      const detail = variation && variationDetails(variation, config.locationId, store.counts);
+      const available = !detail?.inStock
+        ? 0
+        : detail.quantity === null
+          ? null
+          : Math.floor(detail.quantity);
+      if (available === null || line.quantity <= available) return [];
+      const parent = store.items.find((item) =>
+        item.item_data?.variations?.some((v) => v.id === line.variationId),
+      );
+      return [
+        {
+          variationId: line.variationId,
+          availableQuantity: available,
+          message: stockMessage(
+            parent?.item_data?.name ?? "An item in your bag",
+            variation?.item_variation_data?.name ?? "",
+            line.quantity,
+            available,
+          ),
+        },
+      ];
+    });
+    if (shortages.length)
+      return paymentJson(
+        { error: shortages.map((item) => item.message).join(" "), stockIssues: shortages },
+        409,
+      );
     if (!attempt) {
-      const store = await loadStore(env, token);
-      const byId = new Map(store.variations.map((v) => [v.id, v]));
       for (const line of cart) {
         const variation = byId.get(line.variationId);
         if (!variation) throw new PaymentError(409, "An item in your bag is no longer available.");
@@ -141,8 +173,6 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
               "Prices changed. Please reopen your bag and review the current total.",
             );
         }
-        if (!detail.inStock || (detail.quantity !== null && line.quantity > detail.quantity))
-          throw new PaymentError(409, "There is not enough stock for an item in your bag.");
       }
       const paymentRequest = {
         idempotency_key: id,

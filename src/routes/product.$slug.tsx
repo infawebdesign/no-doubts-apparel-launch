@@ -10,6 +10,7 @@ import {
   squareCatalogQuery,
   type SquareVariation,
 } from "@/lib/square-catalog";
+import { stockLimit, stockMessage } from "@/lib/cart-stock";
 import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/site/ProductCard";
 
@@ -65,17 +66,25 @@ function ProductDetail({ product }: { product: Product }) {
         priceAmount: product.priceCents,
         currency: "CAD",
         inStock: true,
+        availableQuantity: null,
       }));
   const selected = variations.find((v) => (v.name ?? "") === selectedSize) ?? null;
   const price = selected?.priceAmount ?? itemPriceAmount(squareItem) ?? product.priceCents;
   const currency = itemCurrency(squareItem);
-  const { addLine } = useCart();
+  const { addLine, lines } = useCart();
+  const inBag = lines.find((line) => line.squareVariationId === selected?.id)?.quantity ?? 0;
   const [added, setAdded] = useState(false);
 
-  const canAdd = Boolean(liveAvailable && selected && selected.id && selected.inStock);
+  const canAdd = Boolean(
+    liveAvailable &&
+    selected &&
+    selected.id &&
+    selected.inStock &&
+    inBag < stockLimit(selected.availableQuantity),
+  );
 
   const handleAdd = () => {
-    if (!squareItem || !selected || !selected.inStock) return;
+    if (!squareItem || !selected || !canAdd) return;
     addLine({
       squareItemId: squareItem.id,
       squareVariationId: selected.id,
@@ -83,6 +92,7 @@ function ProductDetail({ product }: { product: Product }) {
       slug: product.slug,
       size: selected.name ?? "",
       priceAmount: selected.priceAmount,
+      availableQuantity: selected.availableQuantity,
       currency: selected.currency ?? currency,
       imageUrl: product.images[0]?.url ?? null,
       imageAlt: product.images[0]?.alt ?? product.name,
@@ -210,6 +220,16 @@ function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
+          {selected &&
+            selected.availableQuantity !== null &&
+            selected.availableQuantity !== undefined && (
+              <p className="mt-3 text-sm text-muted-foreground" role="status">
+                {stockMessage(product.name, selected.name ?? "", inBag, selected.availableQuantity)}
+                {inBag >= stockLimit(selected.availableQuantity) &&
+                  selected.inStock &&
+                  " You already have the available quantity in your bag."}
+              </p>
+            )}
           <button
             type="button"
             disabled={!canAdd}
