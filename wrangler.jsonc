@@ -8,7 +8,7 @@
   "observability": {
     "enabled": true,
   },
-  "triggers": { "crons": ["17 * * * *"] },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "SQUARE_LOCATION_ID": "LRFYM2F3WGKG7",
     "SQUARE_MERCHANT_ID": "MLJY1JYR27C1Z",

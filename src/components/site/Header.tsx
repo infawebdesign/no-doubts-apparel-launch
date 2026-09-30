@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { prepareCheckout } from "@/lib/checkout-attempt";
-import { parseShipping, PROVINCES, SHIPPING_METHODS } from "@/lib/shipping";
+import { validEmail, parseShipping, PROVINCES, SHIPPING_METHODS } from "@/lib/shipping";
 import { ShippingFields, emptyShipping, type ShippingDraft } from "./ShippingFields";
 import { squareCheckoutUrl } from "@/lib/payment-contract";
 import { Menu, X, ShoppingBag, Minus, Plus, Trash2 } from "lucide-react";
@@ -138,9 +138,9 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
   const handleCheckout = async () => {
     if (!canCheckout || checkoutBusy.current) return;
     const destination = parseShipping(shipping);
-    if (!destination) {
+    if (!destination || !validEmail(destination.email)) {
       setError(
-        "Please complete your Canadian shipping address. Check that the postal code matches the province.",
+        "Please enter your email and Canadian shipping address. Check that the postal code matches the province.",
       );
       return;
     }
@@ -348,6 +348,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                   <p className="font-semibold">Review your delivery address</p>
                   <p>
                     {shipping.name}
+                    <br />
+                    {shipping.email}
                     <br />
                     {shipping.address}
                     {shipping.apartment && `, ${shipping.apartment}`}

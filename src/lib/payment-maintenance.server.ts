@@ -1,3 +1,4 @@
+import { queueShippingEmails, deliverShippingEmails } from "./shipping-email.server.ts";
 import { getValidSquareAccessToken, type SquareEnv } from "./square-oauth.server.ts";
 import { statusHandler } from "./payment-handlers.server.ts";
 import { redactCheckout } from "./checkout-privacy.server.ts";
@@ -30,6 +31,7 @@ export async function maintainPayments(env: SquareEnv, now = Date.now()) {
       .bind(await redactCheckout(row.request_json, env), row.attempt_id)
       .run();
   }
+  await deliverShippingEmails(env, now);
   const credentials = await getValidSquareAccessToken(env);
   if (!credentials.ok) throw new Error("Scheduled Square credential check failed");
   // Pull authenticated Square state even when the buyer never returns. Bounded
@@ -55,6 +57,13 @@ export async function maintainPayments(env: SquareEnv, now = Date.now()) {
       )
       .bind(now, response.ok ? (result.status ?? "unknown") : "unavailable", row.attempt_id)
       .run();
+    if (response.ok && result.status === "paid") {
+      try {
+        await queueShippingEmails(env, row.attempt_id, now);
+      } catch {
+        console.error("[shipping-email] scheduled order lookup unavailable");
+      }
+    }
     if (!response.ok)
       console.error("[square] scheduled verification unavailable", { status: response.status });
   }

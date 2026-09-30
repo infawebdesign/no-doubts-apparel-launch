@@ -1,3 +1,10 @@
+import {
+  queueShippingEmails,
+  deliverShippingEmails,
+  shippingEmail,
+  trackingLink,
+} from "../src/lib/shipping-email.server.ts";
+import { squareWebhookHandler } from "../src/lib/square-webhook.server.ts";
 import { stockLimit, stockMessage } from "../src/lib/cart-stock.ts";
 /* eslint-disable @typescript-eslint/no-explicit-any -- Deliberately malformed external API fixtures exercise validation. */
 import { test, beforeEach, afterEach } from "node:test";
@@ -124,6 +131,9 @@ beforeEach(async () => {
   );
   sql.exec(
     readFileSync(new URL("../migrations/0003_square_webhook_events.sql", import.meta.url), "utf8"),
+  );
+  sql.exec(
+    readFileSync(new URL("../migrations/0004_shipping_emails.sql", import.meta.url), "utf8"),
   );
   sql.exec(`CREATE TABLE square_oauth_tokens (merchant_id TEXT PRIMARY KEY, access_token_ciphertext TEXT,
     access_token_iv TEXT, refresh_token_ciphertext TEXT, refresh_token_iv TEXT, expires_at TEXT, updated_at TEXT)`);
@@ -870,4 +880,274 @@ test("cart stock limits fail closed until refreshed and retain untracked item li
   assert.equal(stockLimit(NaN), 0);
   assert.match(stockMessage("Shirt", "M", 3, 2), /Reduce your quantity from 3 to 2/);
   assert.match(stockMessage("Shirt", "M", 1, 0), /remove it from your bag/);
+});
+
+async function shippedOrder() {
+  const id = crypto.randomUUID();
+  const response = await checkout(id, [item], {
+    shipping: { ...shipping, email: "buyer@example.com" },
+  });
+  assert.equal(response.status, 200);
+  assert.equal((await (await status(id)).json()).status, "paid");
+  sql.prepare("UPDATE checkout_attempts SET verified_status='paid' WHERE attempt_id=?").run(id);
+  env.RESEND_API_KEY = "test-resend";
+  env.SHIPPING_EMAIL_FROM = "orders@nodoubts.ca";
+  env.SHIPPING_EMAILS_ENABLED = "true";
+  env.SHIPPING_EMAILS_START_AT = new Date(Date.now() - 60_000).toISOString();
+  order.fulfillments[0].uid = "shipment-1";
+  order.fulfillments[0].state = "COMPLETED";
+  Object.assign(order.fulfillments[0].shipment_details, {
+    shipped_at: new Date().toISOString(),
+    carrier: "Canada Post",
+    tracking_number: "123456789",
+  });
+  return id;
+}
+function mockResend(handler: (init: RequestInit) => Promise<Response>) {
+  const squareFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    if (String(input) === "https://api.resend.com/emails") return handler(init!);
+    return squareFetch(input, init);
+  };
+}
+
+test("shipment emails use verified orders, encrypted payloads, and one send per fulfillment", async () => {
+  const id = await shippedOrder();
+  let sends = 0;
+  mockResend(async (init) => {
+    sends++;
+    const mail = JSON.parse(String(init.body));
+    assert.deepEqual(mail.to, ["buyer@example.com"]);
+    assert.equal(mail.reply_to, "nodoubts.ca@gmail.com");
+    assert.match(mail.text, /123456789/);
+    assert.match(new Headers(init.headers).get("Idempotency-Key")!, /^shipment[/]/);
+    return Response.json({ id: "resend-1" });
+  });
+  await Promise.all([queueShippingEmails(env, id), queueShippingEmails(env, id)]);
+  const queued = sql.prepare("SELECT * FROM shipping_emails").get()!;
+  assert.equal(queued.state, "queued");
+  assert.ok(!JSON.stringify(queued).includes("buyer@example.com"));
+  const snapshot = sql.prepare("SELECT request_json FROM checkout_attempts").get()!;
+  assert.ok(!String(snapshot.request_json).includes("buyer@example.com"));
+  await Promise.all([deliverShippingEmails(env), deliverShippingEmails(env)]);
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  assert.equal(sends, 1);
+  const sent = sql.prepare("SELECT * FROM shipping_emails").get()!;
+  assert.equal(sent.state, "sent");
+  assert.equal(sent.payload_ciphertext, null);
+});
+
+test("a lost Resend response retries the identical payload and idempotency key", async () => {
+  const id = await shippedOrder();
+  const now = Date.now();
+  let requests = 0;
+  const bodies: string[] = [];
+  const keys: string[] = [];
+  mockResend(async (init) => {
+    bodies.push(String(init.body));
+    keys.push(new Headers(init.headers).get("Idempotency-Key")!);
+    if (++requests === 1) throw new Error("response lost after acceptance");
+    return Response.json({ id: "original-message" });
+  });
+  await queueShippingEmails(env, id, now);
+  await deliverShippingEmails(env, now);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "queued");
+  await deliverShippingEmails(env, now + 300_000);
+  assert.equal(requests, 2);
+  assert.equal(bodies[0], bodies[1]);
+  assert.equal(keys[0], keys[1]);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "sent");
+});
+
+test("uncertain delivery stops before provider idempotency expires", async () => {
+  const id = await shippedOrder();
+  const now = Date.now();
+  let sends = 0;
+  mockResend(async () => {
+    sends++;
+    return Response.json({}, { status: 500 });
+  });
+  await queueShippingEmails(env, id, now);
+  await deliverShippingEmails(env, now);
+  await deliverShippingEmails(env, now + 24 * 3_600_000);
+  assert.equal(sends, 1);
+  const row = sql.prepare("SELECT * FROM shipping_emails").get()!;
+  assert.equal(row.state, "review");
+  assert.equal(row.payload_ciphertext, null);
+});
+
+test("missing tracking or email waits and can recover after a Square correction", async () => {
+  const id = await shippedOrder();
+  delete order.fulfillments[0].shipment_details.tracking_number;
+  await queueShippingEmails(env, id);
+  assert.equal(
+    sql.prepare("SELECT problem FROM shipping_emails").get()!.problem,
+    "missing_tracking",
+  );
+  delete order.fulfillments[0].shipment_details.recipient.email_address;
+  order.fulfillments[0].shipment_details.tracking_number = "TRACK123";
+  await queueShippingEmails(env, id);
+  assert.equal(sql.prepare("SELECT problem FROM shipping_emails").get()!.problem, "missing_email");
+  payment.buyer_email_address = "legacy@example.com";
+  await queueShippingEmails(env, id);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "queued");
+});
+
+test("unpaid, unrelated, historical and unshipped orders cannot queue email", async () => {
+  const id = await shippedOrder();
+  for (const state of ["PROPOSED", "RESERVED", "PREPARED", "CANCELED"]) {
+    order.fulfillments[0].state = state;
+    await queueShippingEmails(env, id);
+  }
+  order.fulfillments[0].state = "COMPLETED";
+  order.fulfillments[0].shipment_details.shipped_at = "2020-01-01T00:00:00Z";
+  await queueShippingEmails(env, id);
+  order.fulfillments[0].shipment_details.shipped_at = new Date().toISOString();
+  order.reference_id = "other-order";
+  await queueShippingEmails(env, id);
+  order.reference_id = id;
+  sql.prepare("UPDATE checkout_attempts SET paid_at=NULL").run();
+  await queueShippingEmails(env, id);
+  assert.equal(sql.prepare("SELECT count(*) AS n FROM shipping_emails").get()!.n, 0);
+});
+
+test("a canceled shipment does not send an already queued notification", async () => {
+  const id = await shippedOrder();
+  await queueShippingEmails(env, id);
+  order.fulfillments[0].state = "CANCELED";
+  mockResend(async () => {
+    assert.fail("must not send");
+  });
+  await deliverShippingEmails(env);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "canceled");
+});
+
+test("email content escapes HTML and rejects unsafe tracking URL schemes", () => {
+  const details = {
+    carrier: "<img src=x>",
+    tracking_number: "<script>",
+    tracking_url: "javascript:alert(1)",
+  };
+  const mail = shippingEmail("orders@nodoubts.ca", "buyer@example.com", "abcdefgh", details);
+  assert.ok(!mail.html.includes("<script>"));
+  assert.ok(!mail.html.includes("<img"));
+  assert.ok(!mail.html.includes("javascript:"));
+  assert.equal(trackingLink({ ...details, tracking_url: "https://user:pass@example.com" }), null);
+});
+
+test("shipping email checkout field rejects invalid values and reaches Square", async () => {
+  env.SHIPPING_EMAILS_ENABLED = "true";
+  assert.equal((await checkout()).status, 400);
+  assert.equal(
+    (await checkout(undefined, [item], { shipping: { ...shipping, email: "bad-email" } })).status,
+    400,
+  );
+  assert.equal(
+    (await checkout(undefined, [item], { shipping: { ...shipping, email: "buyer@example.com" } }))
+      .status,
+    200,
+  );
+  assert.equal(
+    created()[0].body.order.fulfillments[0].shipment_details.recipient.email_address,
+    "buyer@example.com",
+  );
+});
+
+async function shipmentWebhook(id: string, eventId: string, type = "order.updated", valid = true) {
+  env.SQUARE_WEBHOOK_SIGNATURE_KEY = "test-signing-key";
+  const body = JSON.stringify({
+    event_id: eventId,
+    merchant_id: "merchant",
+    type,
+    data: {
+      object: {
+        [type === "order.updated" ? "order_updated" : "order_fulfillment_updated"]: {
+          order_id: id,
+        },
+      },
+    },
+  });
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(env.SQUARE_WEBHOOK_SIGNATURE_KEY),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = Buffer.from(
+    await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(origin + "/api/square/webhook" + body),
+    ),
+  ).toString("base64");
+  return squareWebhookHandler(
+    new Request(origin + "/api/square/webhook", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-square-hmacsha256-signature": valid ? signature : "invalid",
+      },
+      body,
+    }),
+    env,
+  );
+}
+
+test("signed order webhooks deliver once across duplicate and different event IDs", async () => {
+  await shippedOrder();
+  let sends = 0;
+  mockResend(async () => {
+    sends++;
+    return Response.json({ id: "message" });
+  });
+  assert.equal(
+    (await shipmentWebhook("order", "event-invalid", "order.updated", false)).status,
+    403,
+  );
+  assert.equal(sends, 0);
+  assert.equal((await shipmentWebhook("order", "event-one")).status, 200);
+  assert.equal((await shipmentWebhook("order", "event-one")).status, 200);
+  assert.equal(
+    (await shipmentWebhook("order", "event-two", "order.fulfillment.updated")).status,
+    200,
+  );
+  assert.equal(sends, 1);
+});
+
+test("scheduled reconciliation recovers a missing shipping webhook", async () => {
+  await shippedOrder();
+  let sends = 0;
+  const now = Date.now();
+  mockResend(async () => {
+    sends++;
+    return Response.json({ id: "scheduled-message" });
+  });
+  await maintainPayments(env, now);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "queued");
+  await maintainPayments(env, now + 300_000);
+  assert.equal(sends, 1);
+});
+
+test("disabled shipping emails never send or queue", async () => {
+  const id = await shippedOrder();
+  env.SHIPPING_EMAILS_ENABLED = "false";
+  mockResend(async () => {
+    assert.fail("must not send");
+  });
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  assert.equal(sql.prepare("SELECT count(*) AS n FROM shipping_emails").get()!.n, 0);
+});
+
+test("refunds prevent a pending shipment email", async () => {
+  const id = await shippedOrder();
+  await queueShippingEmails(env, id);
+  sql.prepare("UPDATE checkout_attempts SET verified_status='refunded'").run();
+  mockResend(async () => {
+    assert.fail("must not send");
+  });
+  await deliverShippingEmails(env);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "canceled");
 });

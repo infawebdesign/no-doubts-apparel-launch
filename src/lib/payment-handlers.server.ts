@@ -85,10 +85,10 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
     };
     const cart = parseCart(body);
     const shipping = parseShipping(body.shipping);
-    if (!shipping)
+    if (!shipping || (env.SHIPPING_EMAILS_ENABLED === "true" && !shipping.email))
       throw new PaymentError(
         400,
-        "Please enter a valid Canadian shipping address and shipping method.",
+        "Please enter a valid email, Canadian shipping address and shipping method.",
       );
     if (!cart || !validAttempt(body.attemptId))
       throw new PaymentError(400, "Your cart could not be read. Please reload and try again.");

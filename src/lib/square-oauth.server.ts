@@ -33,6 +33,10 @@ type D1Statement = {
 export type D1Database = { prepare: (query: string) => D1Statement };
 
 export type SquareEnv = {
+  RESEND_API_KEY?: string | undefined;
+  SHIPPING_EMAIL_FROM?: string | undefined;
+  SHIPPING_EMAILS_ENABLED?: string | undefined;
+  SHIPPING_EMAILS_START_AT?: string | undefined;
   SQUARE_APP_ID: string | undefined;
   SQUARE_APP_SECRET: string | undefined;
   SQUARE_TOKEN_ENCRYPTION_KEY: string | undefined;
@@ -69,6 +73,10 @@ export async function getSquareEnv(): Promise<SquareEnv> {
   };
 
   return {
+    RESEND_API_KEY: pick("RESEND_API_KEY"),
+    SHIPPING_EMAIL_FROM: pick("SHIPPING_EMAIL_FROM"),
+    SHIPPING_EMAILS_ENABLED: pick("SHIPPING_EMAILS_ENABLED"),
+    SHIPPING_EMAILS_START_AT: pick("SHIPPING_EMAILS_START_AT"),
     SQUARE_APP_ID: pick("SQUARE_APP_ID"),
     SQUARE_APP_SECRET: pick("SQUARE_APP_SECRET"),
     SQUARE_TOKEN_ENCRYPTION_KEY: pick("SQUARE_TOKEN_ENCRYPTION_KEY"),

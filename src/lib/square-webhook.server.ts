@@ -1,10 +1,16 @@
+import { queueShippingEmails, deliverShippingEmails } from "./shipping-email.server.ts";
 import { paymentJson, squareJson, squareSettings } from "./square-config.server.ts";
 import { getSquareEnv, getValidSquareAccessToken, type SquareEnv } from "./square-oauth.server.ts";
 import { statusHandler } from "./payment-handlers.server.ts";
 
 const MAX_WEBHOOK_BYTES = 64 * 1024;
 const SIGNATURE_HEADER = "x-square-hmacsha256-signature";
-const EVENT_TYPES = new Set(["payment.updated", "refund.updated"]);
+const EVENT_TYPES = new Set([
+  "payment.updated",
+  "refund.updated",
+  "order.updated",
+  "order.fulfillment.updated",
+]);
 
 function decodeBase64(value: string): Uint8Array<ArrayBuffer> | null {
   try {
@@ -74,6 +80,8 @@ type WebhookEvent = {
   type?: unknown;
   data?: {
     object?: {
+      order_updated?: { order_id?: unknown };
+      order_fulfillment_updated?: { order_id?: unknown };
       payment?: { order_id?: unknown };
       refund?: { order_id?: unknown; payment_id?: unknown };
     };
@@ -81,7 +89,11 @@ type WebhookEvent = {
 };
 
 async function eventOrderId(event: WebhookEvent, env: SquareEnv) {
-  const candidate = event.data?.object?.payment?.order_id ?? event.data?.object?.refund?.order_id;
+  const candidate =
+    event.data?.object?.order_updated?.order_id ??
+    event.data?.object?.order_fulfillment_updated?.order_id ??
+    event.data?.object?.payment?.order_id ??
+    event.data?.object?.refund?.order_id;
   if (typeof candidate === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(candidate)) return candidate;
   const paymentId = event.data?.object?.refund?.payment_id;
   if (typeof paymentId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentId)) return null;
@@ -201,6 +213,13 @@ export async function squareWebhookHandler(
     )
     .bind(checkedAt, outcome, attempt.attempt_id)
     .run();
+  try {
+    await queueShippingEmails(env, attempt.attempt_id);
+    await deliverShippingEmails(env, Date.now(), 1);
+  } catch {
+    console.error("[shipping-email] webhook processing unavailable");
+    return paymentJson({ error: "Shipping notification processing unavailable." }, 503);
+  }
   await db
     .prepare("UPDATE square_webhook_events SET processed_at = ?, outcome = ? WHERE event_id = ?")
     .bind(checkedAt, outcome, event.event_id)

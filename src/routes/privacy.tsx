@@ -33,7 +33,7 @@ function Privacy() {
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-12 pt-28 sm:px-8 sm:py-20 sm:pt-36">
       <header className="border-b border-border pb-8">
-        <p className="label mb-4 text-muted-foreground">Effective September 24, 2026</p>
+        <p className="label mb-4 text-muted-foreground">Effective September 30, 2026</p>
         <h1 className="display max-w-4xl text-[10vw] leading-[0.85] sm:text-[6vw] lg:text-[5rem]">
           Privacy Policy
         </h1>
@@ -51,10 +51,10 @@ function Privacy() {
 
           <Section title="Information We Collect">
             <p>
-              When you prepare an order, we receive your name, Canadian delivery address, selected
-              shipping method, cart contents, and order identifiers. Payment card and digital-wallet
-              details are entered directly on Square&apos;s secure checkout page; we do not receive
-              or store full card numbers or security codes.
+              When you prepare an order, we receive your name, email address, Canadian delivery
+              address, selected shipping method, cart contents, and order identifiers. Payment card
+              and digital-wallet details are entered directly on Square&apos;s secure checkout page;
+              we do not receive or store full card numbers or security codes.
             </p>
             <p>
               If you contact us, we receive the name, email address, and message you choose to send.
@@ -75,9 +75,10 @@ function Privacy() {
           <Section title="Service Providers">
             <p>
               We use Square for checkout and payment processing, Cloudflare to host and secure this
-              website, Formspree to deliver contact-form messages, and Canada Post to ship orders.
-              Each provider handles information for its service under its own privacy terms. We may
-              also disclose information when required by law or to protect legal rights and safety.
+              website, Formspree to deliver contact-form messages, Resend to send shipping and
+              tracking emails, and Canada Post to ship orders. Each provider handles information for
+              its service under its own privacy terms. We may also disclose information when
+              required by law or to protect legal rights and safety.
             </p>
           </Section>
 
@@ -88,10 +89,13 @@ function Privacy() {
             </p>
             <p>
               On our systems, unfinished checkout address details are removed after 24 hours.
-              Completed checkout snapshots are minimized by removing names and street addresses, and
-              the local checkout cache is removed after 90 days. Square, Formspree, email, and
-              shipping providers may retain records according to their own policies and legal
-              obligations. Business and transaction records may be retained where required by law.
+              Completed checkout snapshots are minimized by removing names, email addresses, and
+              street addresses, and the local checkout cache is removed after 90 days. Shipping
+              email content is encrypted while queued and removed after the email provider accepts
+              it or the retry window expires. Delivery records are retained for up to 100 days to
+              prevent duplicate notifications. Square, Formspree, email, and shipping providers may
+              retain records according to their own policies and legal obligations. Business and
+              transaction records may be retained where required by law.
             </p>
           </Section>
 

@@ -3,6 +3,7 @@ import { PROVINCES, SHIPPING_METHODS, type Shipping } from "@/lib/shipping";
 export type ShippingDraft = Omit<Shipping, "province"> & { province: Shipping["province"] | "" };
 export const emptyShipping: ShippingDraft = {
   name: "",
+  email: "",
   address: "",
   apartment: "",
   city: "",
@@ -23,6 +24,7 @@ export function ShippingFields({
   const style = "mt-1 w-full rounded-none border border-border bg-ink px-3 py-2 text-sm text-bone";
   const fields = [
     ["name", "Full name", "name", 100],
+    ["email", "Email for shipping updates", "email", 254],
     ["address", "Street address", "shipping address-line1", 200],
     ["apartment", "Apartment / suite (optional)", "shipping address-line2", 100],
     ["city", "City", "shipping address-level2", 100],
@@ -38,10 +40,11 @@ export function ShippingFields({
         <label key={key} className="block text-sm text-bone">
           {label}
           <input
+            type={key === "email" ? "email" : "text"}
             className={style}
             autoComplete={autoComplete}
             maxLength={maxLength}
-            value={value[key]}
+            value={value[key] ?? ""}
             onChange={(e) => onChange({ ...value, [key]: e.target.value })}
           />
         </label>

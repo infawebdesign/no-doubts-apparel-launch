@@ -43,6 +43,7 @@ export async function redactCheckout(raw: string, env: SquareEnv): Promise<strin
     const recipient = snapshot.order.fulfillments[0]!.shipment_details.recipient;
     snapshot.address_hmac = await addressDigest(recipient.address, env);
     recipient.display_name = "";
+    delete recipient.email_address;
     recipient.address = {} as typeof recipient.address;
   }
   snapshot.privacy_version = 1;

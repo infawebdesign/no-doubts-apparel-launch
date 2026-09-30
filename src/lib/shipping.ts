@@ -1,3 +1,7 @@
+export const validEmail = (value: unknown): value is string =>
+  typeof value === "string" &&
+  value.length <= 254 &&
+  /^[^\s<>@,;]+@[^\s<>@,;]+\.[^\s<>@,;]+$/.test(value);
 // GST/HST only, per merchant confirmation. CRA rates verified 2026-09-20:
 // https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses/charge-collect-which-rate/calculator.html
 export const PROVINCES = {
@@ -20,6 +24,7 @@ export const SHIPPING_METHODS = {
   xpresspost: { name: "Canada Post — Xpresspost", amount: 2000 },
 } as const;
 export type Shipping = {
+  email?: string;
   name: string;
   address: string;
   apartment: string;
@@ -42,6 +47,8 @@ export function parseShipping(value: unknown): Shipping | null {
       ? v.trim()
       : null;
   };
+  const email = clean("email", 254, true);
+  if (email === null || (email && !validEmail(email))) return null;
   const name = clean("name", 100),
     address = clean("address", 200),
     apartment = clean("apartment", 100, true),
@@ -78,6 +85,7 @@ export function parseShipping(value: unknown): Shipping | null {
   };
   if (!prefixes[s.province]!.includes(postal[0]!)) return null;
   return {
+    ...(email ? { email } : {}),
     name,
     address,
     apartment,
@@ -122,6 +130,7 @@ export function shippingOrderFields(s: Shipping) {
           shipping_type: method.name,
           recipient: {
             display_name: s.name,
+            ...(s.email ? { email_address: s.email } : {}),
             address: {
               address_line_1: s.address,
               address_line_2: s.apartment,
