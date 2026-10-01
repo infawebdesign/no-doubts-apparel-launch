@@ -33,6 +33,8 @@ type D1Statement = {
 export type D1Database = { prepare: (query: string) => D1Statement };
 
 export type SquareEnv = {
+  MERCHANT_ORDER_EMAIL_TO?: string | undefined;
+  MERCHANT_ORDER_EMAILS_START_AT?: string | undefined;
   RESEND_API_KEY?: string | undefined;
   SHIPPING_EMAIL_FROM?: string | undefined;
   SHIPPING_EMAILS_ENABLED?: string | undefined;
@@ -73,6 +75,8 @@ export async function getSquareEnv(): Promise<SquareEnv> {
   };
 
   return {
+    MERCHANT_ORDER_EMAIL_TO: pick("MERCHANT_ORDER_EMAIL_TO"),
+    MERCHANT_ORDER_EMAILS_START_AT: pick("MERCHANT_ORDER_EMAILS_START_AT"),
     RESEND_API_KEY: pick("RESEND_API_KEY"),
     SHIPPING_EMAIL_FROM: pick("SHIPPING_EMAIL_FROM"),
     SHIPPING_EMAILS_ENABLED: pick("SHIPPING_EMAILS_ENABLED"),

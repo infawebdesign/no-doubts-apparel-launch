@@ -53,7 +53,6 @@ export function variationDetails(
   const sellable =
     atLocation(variation, locationId) &&
     data?.sellable !== false &&
-    data?.name?.trim().toUpperCase() !== "3XL" &&
     money?.currency === "CAD" &&
     Number.isSafeInteger(money?.amount) &&
     (money?.amount ?? 0) > 0;

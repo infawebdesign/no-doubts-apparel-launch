@@ -10,7 +10,7 @@ import {
   squareCatalogQuery,
   type SquareVariation,
 } from "@/lib/square-catalog";
-import { stockLimit, stockMessage } from "@/lib/cart-stock";
+import { stockLimit } from "@/lib/cart-stock";
 import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/site/ProductCard";
 
@@ -220,16 +220,11 @@ function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
-          {selected &&
-            selected.availableQuantity !== null &&
-            selected.availableQuantity !== undefined && (
-              <p className="mt-3 text-sm text-muted-foreground" role="status">
-                {stockMessage(product.name, selected.name ?? "", inBag, selected.availableQuantity)}
-                {inBag >= stockLimit(selected.availableQuantity) &&
-                  selected.inStock &&
-                  " You already have the available quantity in your bag."}
-              </p>
-            )}
+          {selected?.inStock && inBag >= stockLimit(selected.availableQuantity) && (
+            <p className="mt-3 text-sm text-muted-foreground" role="status">
+              You already have the available quantity in your bag. Review your bag before checkout.
+            </p>
+          )}
           <button
             type="button"
             disabled={!canAdd}
@@ -255,7 +250,7 @@ function ProductDetail({ product }: { product: Product }) {
             <div>
               <h2 className="label text-bone">Details</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                60/40 blend. Unisex sizing from XS–2XL. Price is the same across all sizes.
+                60/40 blend. Unisex sizing. Select from the sizes shown above.
               </p>
             </div>
             <div>

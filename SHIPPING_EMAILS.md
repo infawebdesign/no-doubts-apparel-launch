@@ -1,5 +1,18 @@
 # Shipping notifications
 
+New paid website orders also notify `MERCHANT_ORDER_EMAIL_TO` when the Square
+order creation time is at or after `MERCHANT_ORDER_EMAILS_START_AT`. The alert
+contains the order references and a Square dashboard link, not customer contact
+or address details. It uses the same encrypted delivery queue and duplicate
+protection, with `fulfillment_uid=merchant-order-notification`. It does not wait
+for shipment and is separate from the customer tracking email.
+
+Failures record a safe stage/status code, such as `resend_http_401` (sending key
+rejected), `resend_http_403` (provider permission rejection),
+`provider_connection_failed`, or `source_lookup_failed`. Provider responses and
+credentials are never logged. Correct the cause before retrying a notification
+in manual review; do not reset its idempotency history.
+
 Shipping notifications are disabled unless `SHIPPING_EMAILS_ENABLED=true` and
 `SHIPPING_EMAILS_START_AT` is a valid ISO timestamp. Square remains the source of
 truth for orders and fulfillment. Resend sends the transactional notification.

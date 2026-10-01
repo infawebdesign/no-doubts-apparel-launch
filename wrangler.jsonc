@@ -14,6 +14,11 @@
     "SQUARE_MERCHANT_ID": "MLJY1JYR27C1Z",
     "SQUARE_ENVIRONMENT": "production",
     "PUBLIC_SITE_URL": "https://nodoubts.ca",
+    "SHIPPING_EMAIL_FROM": "orders@nodoubts.ca",
+    "SHIPPING_EMAILS_ENABLED": "true",
+    "SHIPPING_EMAILS_START_AT": "2026-09-30T18:45:23Z",
+    "MERCHANT_ORDER_EMAIL_TO": "nodoubts.ca@gmail.com",
+    "MERCHANT_ORDER_EMAILS_START_AT": "2026-10-01T00:08:35Z",
   },
   "d1_databases": [
     {

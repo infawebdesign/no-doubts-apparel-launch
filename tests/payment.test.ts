@@ -552,7 +552,7 @@ test("concurrent refresh lease prevents a second expired-token refresh", async (
   assert.equal((await getValidSquareAccessToken(env)).ok, false);
   assert.equal(calls.length, 0);
 });
-test("hidden sizes, unknown variations and unpublished catalog items cannot be purchased", async () => {
+test("unknown variations and unpublished catalog items cannot be purchased", async () => {
   objects.push({
     id: "private",
     type: "ITEM",
@@ -566,7 +566,7 @@ test("hidden sizes, unknown variations and unpublished catalog items cannot be p
       ],
     },
   });
-  for (const id of ["variation-3xl", "unknown", "private-variation"])
+  for (const id of ["unknown", "private-variation"])
     assert.equal((await checkout(undefined, [{ variationId: id, quantity: 1 }])).status, 409);
   assert.equal(created().length, 0);
 });
@@ -592,7 +592,8 @@ test("other-location inventory cannot override the configured location", async (
   const response = await productsHandler(new Request(`${origin}/api/square/products`), env);
   assert.equal(response.status, 200);
   const data = await response.json();
-  assert.equal(data.items[0].variations.length, 1);
+  assert.equal(data.items[0].variations.length, 2);
+  assert.equal(data.items[0].variations[0].availableQuantity, 3);
   assert.equal(data.items[0].variations[0].inventoryQuantity, undefined);
   assert.equal(data.items[0].variations[0].inStock, true);
 });
@@ -1150,4 +1151,80 @@ test("refunds prevent a pending shipment email", async () => {
   });
   await deliverShippingEmails(env);
   assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "canceled");
+});
+
+test("merchant alerts send once for a paid new website order before shipping", async () => {
+  const id = await shippedOrder();
+  env.MERCHANT_ORDER_EMAIL_TO = "nodoubts.ca@gmail.com";
+  env.MERCHANT_ORDER_EMAILS_START_AT = new Date(Date.now() - 60000).toISOString();
+  order.created_at = new Date().toISOString();
+  order.fulfillments[0].state = "PROPOSED";
+  const messages: any[] = [];
+  mockResend(async (init) => {
+    messages.push(JSON.parse(String(init.body)));
+    return Response.json({ id: "merchant-message" });
+  });
+  await Promise.all([queueShippingEmails(env, id), queueShippingEmails(env, id)]);
+  await deliverShippingEmails(env);
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  assert.equal(messages.length, 1);
+  assert.deepEqual(messages[0].to, ["nodoubts.ca@gmail.com"]);
+  assert.match(messages[0].subject, /New paid website order/);
+  assert.ok(!messages[0].text.includes("buyer@example.com"));
+});
+
+test("merchant alerts exclude historical and unpaid orders", async () => {
+  const id = await shippedOrder();
+  env.MERCHANT_ORDER_EMAIL_TO = "nodoubts.ca@gmail.com";
+  env.MERCHANT_ORDER_EMAILS_START_AT = new Date(Date.now() - 60000).toISOString();
+  order.created_at = "2020-01-01T00:00:00Z";
+  order.fulfillments[0].state = "PROPOSED";
+  await queueShippingEmails(env, id);
+  order.created_at = new Date().toISOString();
+  sql.prepare("UPDATE checkout_attempts SET verified_status='pending'").run();
+  await queueShippingEmails(env, id);
+  assert.equal(sql.prepare("SELECT count(*) AS n FROM shipping_emails").get()!.n, 0);
+});
+
+test("provider authentication failures are diagnosed without storing secrets or response data", async () => {
+  const id = await shippedOrder();
+  mockResend(async () =>
+    Response.json({ message: "sensitive provider response" }, { status: 401 }),
+  );
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  const row = sql.prepare("SELECT * FROM shipping_emails").get()!;
+  assert.equal(row.problem, "resend_http_401");
+  assert.equal(row.state, "queued");
+  assert.ok(!JSON.stringify(row).includes("sensitive provider response"));
+});
+
+test("temporary order verification failures retain a queued notification for retry", async () => {
+  const id = await shippedOrder();
+  const now = Date.now();
+  await queueShippingEmails(env, id, now);
+  sql.prepare("UPDATE checkout_attempts SET verified_status='unavailable'").run();
+  let sends = 0;
+  mockResend(async () => {
+    sends++;
+    return Response.json({ id: "recovered" });
+  });
+  await deliverShippingEmails(env, now);
+  assert.equal(sends, 0);
+  assert.equal(sql.prepare("SELECT state FROM shipping_emails").get()!.state, "queued");
+  sql.prepare("UPDATE checkout_attempts SET verified_status='paid'").run();
+  await deliverShippingEmails(env, now + 300000);
+  assert.equal(sends, 1);
+});
+
+test("Square-added 3XL is listed and can reach checkout", async () => {
+  const response = await productsHandler(new Request(origin + "/api/square/products"), env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.ok(body.items[0].variations.some((v: any) => v.name === "3XL" && v.inStock));
+  assert.equal(
+    (await checkout(undefined, [{ variationId: "variation-3xl", quantity: 1 }])).status,
+    200,
+  );
 });

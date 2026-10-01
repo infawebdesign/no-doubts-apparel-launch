@@ -23,6 +23,7 @@ type Shipment = {
   };
 };
 type ShippingOrder = {
+  created_at?: string;
   id?: string;
   reference_id?: string;
   location_id?: string;
@@ -135,6 +136,7 @@ export async function queueShippingEmails(env: SquareEnv, attemptId: string, now
     order.state === "CANCELED"
   )
     return;
+  await queueMerchantOrderEmail(env, attemptId, order, now);
   for (const fulfillment of order.fulfillments ?? []) {
     const details = fulfillment.shipment_details;
     if (
@@ -218,6 +220,53 @@ export async function queueShippingEmails(env: SquareEnv, attemptId: string, now
   }
 }
 
+const MERCHANT_ORDER = "merchant-order-notification";
+
+async function queueMerchantOrderEmail(
+  env: SquareEnv,
+  attemptId: string,
+  order: ShippingOrder,
+  now: number,
+) {
+  const cutoff = Date.parse(env.MERCHANT_ORDER_EMAILS_START_AT ?? "");
+  const created = Date.parse(order.created_at ?? "");
+  if (
+    !validEmail(env.MERCHANT_ORDER_EMAIL_TO) ||
+    !Number.isFinite(cutoff) ||
+    !Number.isFinite(created) ||
+    created < cutoff ||
+    created > now + 300_000
+  )
+    return;
+  const id = await sha256(`merchant-order-v1:${squareSettings(env).merchantId}:${order.id}`);
+  const prior = await env
+    .SQUARE_DB!.prepare("SELECT state FROM shipping_emails WHERE notification_id=?")
+    .bind(id)
+    .first();
+  if (prior) return;
+  const ref = attemptId.slice(0, 8).toUpperCase();
+  const email: Email = {
+    from: sender(env),
+    to: [env.MERCHANT_ORDER_EMAIL_TO],
+    reply_to: "nodoubts.ca@gmail.com",
+    subject: `New paid website order ${ref} — No Doubts Apparel`,
+    text: `A new paid order was placed on nodoubts.ca.\n\nWebsite reference: ${ref}\nSquare order ID: ${order.id}\n\nOpen Square to review the items and shipping details: https://app.squareup.com/dashboard/orders\n\nThis is a merchant notification, not a customer shipping email.`,
+    html: `<h1>New paid website order</h1><p>A new paid order was placed on nodoubts.ca.</p><p>Website reference: <strong>${escapeHtml(ref)}</strong><br>Square order ID: ${escapeHtml(order.id!)}</p><p><a href="https://app.squareup.com/dashboard/orders">Review the order in Square</a> for items and shipping details.</p><p>This is a merchant notification, not a customer shipping email.</p>`,
+  };
+  const encrypted = await encryptToken(
+    await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY!),
+    JSON.stringify(email),
+  );
+  await env
+    .SQUARE_DB!.prepare(
+      `INSERT INTO shipping_emails
+    (notification_id, order_id, fulfillment_uid, state, payload_ciphertext, payload_iv, created_at, next_attempt_at)
+    VALUES (?, ?, ?, 'queued', ?, ?, ?, ?) ON CONFLICT(notification_id) DO NOTHING`,
+    )
+    .bind(id, order.id, MERCHANT_ORDER, encrypted.ciphertext, encrypted.iv, now, now)
+    .run();
+}
+
 export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), limit = 10) {
   if (!shippingEmailsEnabled(env)) return;
   sender(env);
@@ -249,6 +298,7 @@ export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), li
       });
       continue;
     }
+    let problem = "source_lookup_failed";
     try {
       // Recheck before sending; never send a pending notification for a canceled shipment.
       const source = await db
@@ -257,13 +307,15 @@ export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), li
         .first<{ verified_status: string }>();
       const { order } = await loadOrder(env, row.order_id);
       const fulfillment = order?.fulfillments?.find((f) => f.uid === row.fulfillment_uid);
+      if (source?.verified_status === "unavailable" || source?.verified_status === "unknown")
+        throw new Error("Order verification temporarily unavailable");
       if (
         source?.verified_status !== "paid" ||
         !order ||
         order.id !== row.order_id ||
         order.location_id !== squareSettings(env).locationId ||
         order.state === "CANCELED" ||
-        fulfillment?.state !== "COMPLETED"
+        (row.fulfillment_uid !== MERCHANT_ORDER && fulfillment?.state !== "COMPLETED")
       ) {
         await db
           .prepare(
@@ -273,6 +325,7 @@ export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), li
           .run();
         continue;
       }
+      problem = "payload_decryption_failed";
       const email = JSON.parse(
         await decryptToken(
           await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY!),
@@ -287,19 +340,24 @@ export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), li
         )
         .bind(now, row.notification_id)
         .run();
+      problem = "provider_connection_failed";
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         redirect: "error",
         signal: AbortSignal.timeout(15_000),
         headers: {
-          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${env.RESEND_API_KEY!.trim()}`,
           "Content-Type": "application/json",
           "Idempotency-Key": `shipment/${row.notification_id}`,
         },
         body: JSON.stringify(email),
       });
       const result = (await response.json().catch(() => null)) as { id?: string } | null;
-      if (!response.ok || !result?.id) throw new Error("Email provider did not confirm acceptance");
+      if (!response.ok || !result?.id) {
+        problem = response.ok ? "provider_invalid_response" : `resend_http_${response.status}`;
+        throw new Error("Email provider did not confirm acceptance");
+      }
+      problem = "acceptance_record_failed";
       await db
         .prepare(
           "UPDATE shipping_emails SET state='sent', provider_id=?, sent_at=?, payload_ciphertext=NULL, payload_iv=NULL, lease_until=0, problem=NULL WHERE notification_id=?",
@@ -310,11 +368,18 @@ export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), li
       // Never log addresses, message contents, credentials, or provider responses.
       await db
         .prepare(
-          "UPDATE shipping_emails SET lease_until=0, next_attempt_at=?, problem='retry_pending' WHERE notification_id=?",
+          "UPDATE shipping_emails SET lease_until=0, next_attempt_at=?, problem=? WHERE notification_id=?",
         )
-        .bind(now + Math.min(HOUR, 60_000 * 2 ** Math.min(row.attempts, 6)), row.notification_id)
+        .bind(
+          now + Math.min(HOUR, 60_000 * 2 ** Math.min(row.attempts, 6)),
+          problem,
+          row.notification_id,
+        )
         .run();
-      console.error("[shipping-email] retry scheduled", { notificationId: row.notification_id });
+      console.error("[shipping-email] retry scheduled", {
+        notificationId: row.notification_id,
+        problem,
+      });
     }
   }
 }

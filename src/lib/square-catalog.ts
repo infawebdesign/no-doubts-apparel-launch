@@ -63,20 +63,9 @@ export function findSquareItem(
 
 const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 
-/**
- * Temporary website-level merchandising restriction: 3XL stays in Square
- * but must not be offered on the storefront until Francesco re-enables it.
- */
-const HIDDEN_SIZES = new Set(["3XL"]);
-
-export function isVariationHidden(name: string | null): boolean {
-  return name != null && HIDDEN_SIZES.has(name.trim().toUpperCase());
-}
-
 /** Variations the storefront is allowed to sell right now. */
 export function visibleVariations(item: SquareItem | undefined): SquareVariation[] {
-  if (!item) return [];
-  return item.variations.filter((v) => !isVariationHidden(v.name));
+  return [...(item?.variations ?? [])];
 }
 
 const sizeRank = (name: string | null) => {
@@ -85,7 +74,7 @@ const sizeRank = (name: string | null) => {
   return idx === -1 ? SIZE_ORDER.length : idx;
 };
 
-/** Variations sorted into the usual size run, excluding hidden sizes. */
+/** All Square variations, sorted into the usual size run. */
 export function sortedVariations(item: SquareItem | undefined) {
   return visibleVariations(item).sort((a, b) => sizeRank(a.name) - sizeRank(b.name));
 }
