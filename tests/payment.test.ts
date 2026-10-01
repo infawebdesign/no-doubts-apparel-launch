@@ -939,6 +939,47 @@ test("shipment emails use verified orders, encrypted payloads, and one send per 
   assert.equal(sent.payload_ciphertext, null);
 });
 
+test("email request options work in workerd and provider redirects remain queued", async () => {
+  const id = await shippedOrder();
+  let captured: RequestInit | undefined;
+  mockResend(async (init) => {
+    captured = init;
+    return new Response(null, {
+      status: 307,
+      headers: { Location: "https://untrusted.example/emails" },
+    });
+  });
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  assert.ok(captured);
+  const row = sql.prepare("SELECT state, problem FROM shipping_emails").get()!;
+  assert.equal(row.state, "queued");
+  assert.equal(row.problem, "resend_http_307");
+  // Validate the actual production options in Cloudflare's runtime, not Node's fetch.
+  globalThis.fetch = realFetch;
+  const { Miniflare, convertV4MiniflareOptions } = await import("miniflare");
+  const { signal: _signal, ...options } = captured;
+  const mf = new Miniflare(
+    convertV4MiniflareOptions({
+      modules: true,
+      compatibilityDate: "2026-09-01",
+      script: `export default { fetch() {
+      const request = new Request("https://api.resend.com/emails", {
+        ...${JSON.stringify(options)}, signal: AbortSignal.timeout(15000)
+      });
+      return Response.json({redirect: request.redirect, method: request.method});
+    } }`,
+    }),
+  );
+  try {
+    const response = await mf.dispatchFetch("http://localhost");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { redirect: "manual", method: "POST" });
+  } finally {
+    await mf.dispose();
+  }
+});
+
 test("a lost Resend response retries the identical payload and idempotency key", async () => {
   const id = await shippedOrder();
   const now = Date.now();

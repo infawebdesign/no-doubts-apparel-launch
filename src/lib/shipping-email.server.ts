@@ -343,7 +343,8 @@ export async function deliverShippingEmails(env: SquareEnv, now = Date.now(), li
       problem = "provider_connection_failed";
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        redirect: "error",
+        // Workerd supports manual redirects; non-2xx responses are rejected below.
+        redirect: "manual",
         signal: AbortSignal.timeout(15_000),
         headers: {
           Authorization: `Bearer ${env.RESEND_API_KEY!.trim()}`,
