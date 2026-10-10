@@ -240,7 +240,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                     </p>
                     {catalogReady &&
                       line.availableQuantity !== null &&
-                      line.availableQuantity !== undefined && (
+                      line.availableQuantity !== undefined &&
+                      (line.availableQuantity < 5 || line.quantity > line.availableQuantity) && (
                         <p
                           className={
                             line.quantity > stockLimit(line.availableQuantity)

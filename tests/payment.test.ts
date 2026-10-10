@@ -872,6 +872,11 @@ test("saved checkout links recheck stock before returning a redirect", async () 
 });
 
 test("cart stock limits fail closed until refreshed and retain untracked item limits", () => {
+  assert.equal(stockMessage("Shirt", "M", 1, 5), "");
+  assert.equal(stockMessage("Shirt", "M", 1, 20), "");
+  assert.match(stockMessage("Shirt", "M", 1, 4), /Only 4/);
+  assert.match(stockMessage("Shirt", "M", 6, 5), /exceeds current stock/);
+  assert.doesNotMatch(stockMessage("Shirt", "M", 6, 5), /5/);
   assert.equal(stockLimit(undefined), 0);
   assert.equal(stockLimit(null), 10);
   assert.equal(stockLimit(2), 2);
