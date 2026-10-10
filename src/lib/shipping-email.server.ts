@@ -14,6 +14,7 @@ type Shipment = {
   uid?: string;
   type?: string;
   state?: string;
+  pickup_details?: { note?: string };
   shipment_details?: {
     shipped_at?: string;
     carrier?: string;
@@ -245,13 +246,14 @@ async function queueMerchantOrderEmail(
     .first();
   if (prior) return;
   const ref = attemptId.slice(0, 8).toUpperCase();
+  const pickupNote = order.fulfillments?.find((f) => f.type === "PICKUP")?.pickup_details?.note;
   const email: Email = {
     from: sender(env),
     to: [env.MERCHANT_ORDER_EMAIL_TO],
     reply_to: "nodoubts.ca@gmail.com",
     subject: `New paid website order ${ref} — No Doubts Apparel`,
-    text: `A new paid order was placed on nodoubts.ca.\n\nWebsite reference: ${ref}\nSquare order ID: ${order.id}\n\nOpen Square to review the items and shipping details: https://app.squareup.com/dashboard/orders\n\nThis is a merchant notification, not a customer shipping email.`,
-    html: `<h1>New paid website order</h1><p>A new paid order was placed on nodoubts.ca.</p><p>Website reference: <strong>${escapeHtml(ref)}</strong><br>Square order ID: ${escapeHtml(order.id!)}</p><p><a href="https://app.squareup.com/dashboard/orders">Review the order in Square</a> for items and shipping details.</p><p>This is a merchant notification, not a customer shipping email.</p>`,
+    text: `A new paid order was placed on nodoubts.ca.\n\nWebsite reference: ${ref}\nSquare order ID: ${order.id}${pickupNote ? `\n\nEvent pickup: ${pickupNote}` : ""}\n\nOpen Square to review the items and delivery details: https://app.squareup.com/dashboard/orders\n\nThis is a merchant notification, not a customer shipping email.`,
+    html: `<h1>New paid website order</h1><p>A new paid order was placed on nodoubts.ca.</p><p>Website reference: <strong>${escapeHtml(ref)}</strong><br>Square order ID: ${escapeHtml(order.id!)}</p>${pickupNote ? `<p><strong>Event pickup:</strong> ${escapeHtml(pickupNote)}</p>` : ""}<p><a href="https://app.squareup.com/dashboard/orders">Review the order in Square</a> for items and delivery details.</p><p>This is a merchant notification, not a customer shipping email.</p>`,
   };
   const encrypted = await encryptToken(
     await importEncryptionKey(env.SQUARE_TOKEN_ENCRYPTION_KEY!),

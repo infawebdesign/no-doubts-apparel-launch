@@ -32,6 +32,8 @@ import {
   shippingOrderFields,
   PROVINCES,
   SHIPPING_METHODS,
+  PICKUP_EVENTS,
+  PICKUP_INSTRUCTIONS,
 } from "../src/lib/shipping.ts";
 import type { CatalogObject } from "../src/lib/square-store.server.ts";
 import { squareJson, PaymentError } from "../src/lib/square-config.server.ts";
@@ -335,6 +337,101 @@ test("shipping is charged once at a tax-inclusive flat rate", async () => {
     assert.equal(request.order.fulfillments[0].type, "SHIPMENT");
     assert.equal(request.order.fulfillments[0].shipment_details.recipient.address.country, "CA");
   }
+});
+
+test("both event pickups require no address, charge no shipping, and use Ontario HST", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-10T12:00:00Z") });
+  for (const [method, event] of Object.entries(PICKUP_EVENTS)) {
+    const id = crypto.randomUUID();
+    const input = { name: "Pickup Buyer", email: "buyer@example.com", method, province: "AB" };
+    const response = await checkout(id, [item], {
+      shipping: input,
+      shippingAmount: 1500,
+      taxRate: 0,
+    });
+    assert.equal(response.status, 200, await response.text());
+    const request = created().at(-1)!.body;
+    assert.equal(request.order.line_items.length, 1);
+    assert.equal(request.order.line_items[0].catalog_object_id, item.variationId);
+    assert.equal(request.order.taxes[0].percentage, "13");
+    assert.equal(request.checkout_options.shipping_fee, undefined);
+    assert.equal(request.checkout_options.ask_for_shipping_address, false);
+    assert.equal(request.order.fulfillments[0].type, "PICKUP");
+    const details = request.order.fulfillments[0].pickup_details;
+    assert.equal(details.pickup_at, event.pickupAt);
+    assert.ok(details.note.includes(event.name));
+    assert.ok(details.note.includes(PICKUP_INSTRUCTIONS));
+    assert.equal(details.recipient.address, undefined);
+    assert.equal(parseShipping(input)!.province, "ON");
+    assert.deepEqual(await (await status(id)).json(), { status: "paid", cart: [item] });
+    const snapshot = sql
+      .prepare("SELECT request_json FROM checkout_attempts WHERE attempt_id=?")
+      .get(id)!.request_json as string;
+    assert.ok(!snapshot.includes("Pickup Buyer"));
+    assert.ok(!snapshot.includes("buyer@example.com"));
+    assert.equal(await verifyStoredShipping(order, snapshot, env), true);
+    assert.equal((await checkout(id, [item], { shipping: input })).status, 200);
+  }
+});
+
+test("pickup rejects expired events and missing contact details", () => {
+  for (const [method, event] of Object.entries(PICKUP_EVENTS)) {
+    const input = { name: "Buyer", email: "buyer@example.com", method };
+    const closes = Date.parse(event.closesAt);
+    assert.ok(parseShipping(input, closes - 1));
+    assert.equal(parseShipping(input, closes), null);
+    assert.equal(parseShipping(input, closes + 1), null);
+    assert.equal(parseShipping({ ...input, email: "" }, closes - 1), null);
+    assert.equal(parseShipping({ ...input, name: "" }, closes - 1), null);
+  }
+});
+
+test("pickup cannot be switched on retry and altered fees, taxes or event fail verification", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-10T12:00:00Z") });
+  const id = crypto.randomUUID();
+  const input = { name: "Buyer", email: "buyer@example.com", method: "wrpf-2026" };
+  assert.equal((await checkout(id, [item], { shipping: input })).status, 200);
+  assert.equal(
+    (await checkout(id, [item], { shipping: { ...input, method: "coldfront-2026" } })).status,
+    409,
+  );
+  assert.equal((await checkout(id)).status, 409);
+  const expected = shippingOrderFields(parseShipping(input)!);
+  for (const mutate of [
+    (o: any) => {
+      o.fulfillments[0].type = "SHIPMENT";
+    },
+    (o: any) => {
+      o.fulfillments[0].pickup_details.pickup_at = PICKUP_EVENTS["coldfront-2026"].pickupAt;
+    },
+    (o: any) => {
+      o.fulfillments[0].pickup_details.note = "Other event";
+    },
+    (o: any) => {
+      o.taxes[0].percentage = "5";
+    },
+    (o: any) => {
+      o.line_items.push({
+        uid: "shipping",
+        quantity: "1",
+        base_price_money: { amount: 1500, currency: "CAD" },
+      });
+    },
+    (o: any) => {
+      o.line_items.push({ name: "Hidden fee", applied_taxes: [{ tax_uid: "destination-tax" }] });
+    },
+    (o: any) => {
+      o.service_charges = [
+        { name: "Shipping included in order", amount_money: { amount: 1500, currency: "CAD" } },
+      ];
+    },
+  ]) {
+    const changed = structuredClone(order);
+    mutate(changed);
+    assert.equal(hasExpectedShipping(changed, expected), false);
+  }
+  order.fulfillments[0].pickup_details.note = "Wrong event";
+  assert.equal((await status(id)).status, 503);
 });
 
 test("GST/HST rates cover all destinations while shipping remains tax-inclusive", () => {
@@ -1231,6 +1328,42 @@ test("merchant alerts exclude historical and unpaid orders", async () => {
   sql.prepare("UPDATE checkout_attempts SET verified_status='pending'").run();
   await queueShippingEmails(env, id);
   assert.equal(sql.prepare("SELECT count(*) AS n FROM shipping_emails").get()!.n, 0);
+});
+
+test("paid pickup queues one merchant alert with event details and no shipping email", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-10T12:00:00Z") });
+  const id = crypto.randomUUID();
+  assert.equal(
+    (
+      await checkout(id, [item], {
+        shipping: { name: "Buyer", email: "buyer@example.com", method: "coldfront-2026" },
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await (await status(id)).json()).status, "paid");
+  sql.prepare("UPDATE checkout_attempts SET verified_status='paid' WHERE attempt_id=?").run(id);
+  env.RESEND_API_KEY = "test-resend";
+  env.SHIPPING_EMAIL_FROM = "orders@nodoubts.ca";
+  env.SHIPPING_EMAILS_ENABLED = "true";
+  env.SHIPPING_EMAILS_START_AT = new Date(Date.now() - 60000).toISOString();
+  env.MERCHANT_ORDER_EMAIL_TO = "nodoubts.ca@gmail.com";
+  env.MERCHANT_ORDER_EMAILS_START_AT = env.SHIPPING_EMAILS_START_AT;
+  order.created_at = new Date().toISOString();
+  order.fulfillments[0].state = "COMPLETED";
+  const messages: any[] = [];
+  mockResend(async (init) => {
+    messages.push(JSON.parse(String(init.body)));
+    return Response.json({ id: "pickup-merchant-message" });
+  });
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  await queueShippingEmails(env, id);
+  await deliverShippingEmails(env);
+  assert.equal(messages.length, 1);
+  assert.deepEqual(messages[0].to, ["nodoubts.ca@gmail.com"]);
+  assert.match(messages[0].text, /COLDFRONT 2/);
+  assert.match(messages[0].text, /No Doubts vendor booth/);
 });
 
 test("provider authentication failures are diagnosed without storing secrets or response data", async () => {

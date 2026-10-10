@@ -88,7 +88,7 @@ export async function checkoutHandler(request: Request, env = undefined as Squar
     if (!shipping || (env.SHIPPING_EMAILS_ENABLED === "true" && !shipping.email))
       throw new PaymentError(
         400,
-        "Please enter a valid email, Canadian shipping address and shipping method.",
+        "Please enter a valid name and email, then choose an upcoming pickup event or a valid Canadian shipping address and method.",
       );
     if (!cart || !validAttempt(body.attemptId))
       throw new PaymentError(400, "Your cart could not be read. Please reload and try again.");

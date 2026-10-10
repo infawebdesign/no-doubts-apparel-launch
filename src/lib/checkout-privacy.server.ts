@@ -40,7 +40,14 @@ export async function redactCheckout(raw: string, env: SquareEnv): Promise<strin
   const snapshot = JSON.parse(raw) as Snapshot;
   if (snapshot.privacy_version === 1) return raw;
   if (snapshot.order?.metadata?.shipping_fingerprint) {
-    const recipient = snapshot.order.fulfillments[0]!.shipment_details.recipient;
+    const pickup = snapshot.order.fulfillments[0]?.pickup_details;
+    if (pickup) {
+      pickup.recipient.display_name = "";
+      delete pickup.recipient.email_address;
+      snapshot.privacy_version = 1;
+      return JSON.stringify(snapshot);
+    }
+    const recipient = snapshot.order.fulfillments[0]!.shipment_details!.recipient;
     snapshot.address_hmac = await addressDigest(recipient.address, env);
     recipient.display_name = "";
     delete recipient.email_address;
@@ -58,7 +65,7 @@ export async function verifyStoredShipping(
   const snapshot = JSON.parse(raw) as Snapshot;
   if (!snapshot.order?.metadata?.shipping_fingerprint) return true; // pre-shipping legacy orders
   const expected = snapshot.order;
-  if (snapshot.privacy_version === 1) {
+  if (snapshot.privacy_version === 1 && !expected.fulfillments[0]?.pickup_details) {
     const address = (order as ShippingOrder | undefined)?.fulfillments?.[0]?.shipment_details
       ?.recipient?.address;
     if (
@@ -67,7 +74,7 @@ export async function verifyStoredShipping(
       !safeEqual(await addressDigest(address, env), snapshot.address_hmac)
     )
       return false;
-    expected.fulfillments[0]!.shipment_details.recipient.address = address;
+    expected.fulfillments[0]!.shipment_details!.recipient.address = address;
   }
   return hasExpectedShipping(order, expected);
 }

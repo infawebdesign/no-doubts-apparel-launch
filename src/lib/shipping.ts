@@ -19,9 +19,34 @@ export const PROVINCES = {
   SK: ["Saskatchewan", 5],
   YT: ["Yukon", 5],
 } as const;
+export const PICKUP_INSTRUCTIONS =
+  "We will have your order on hand for pickup at the No Doubts vendor booth during the events. If you are unable to pickup, we’ll contact you for shipping details following the event.";
+export const PICKUP_EVENTS = {
+  "wrpf-2026": {
+    name: "WRPF NATIONALS — November 7, 2026",
+    province: "ON",
+    pickupAt: "2026-11-07T00:00:00-05:00",
+    duration: "P1D",
+    closesAt: "2026-11-08T00:00:00-05:00",
+  },
+  "coldfront-2026": {
+    name: "COLDFRONT 2 — November 14–15, 2026",
+    province: "ON",
+    pickupAt: "2026-11-14T00:00:00-05:00",
+    duration: "P2D",
+    closesAt: "2026-11-16T00:00:00-05:00",
+  },
+} as const;
+export function pickupEvent(method: string) {
+  return Object.hasOwn(PICKUP_EVENTS, method)
+    ? PICKUP_EVENTS[method as keyof typeof PICKUP_EVENTS]
+    : undefined;
+}
 export const SHIPPING_METHODS = {
   regular: { name: "Canada Post — Regular Parcel", amount: 1500 },
   xpresspost: { name: "Canada Post — Xpresspost", amount: 2000 },
+  "wrpf-2026": { name: `Pickup: ${PICKUP_EVENTS["wrpf-2026"].name}`, amount: 0 },
+  "coldfront-2026": { name: `Pickup: ${PICKUP_EVENTS["coldfront-2026"].name}`, amount: 0 },
 } as const;
 export type Shipping = {
   email?: string;
@@ -34,7 +59,7 @@ export type Shipping = {
   country: "CA";
   method: keyof typeof SHIPPING_METHODS;
 };
-export function parseShipping(value: unknown): Shipping | null {
+export function parseShipping(value: unknown, now = Date.now()): Shipping | null {
   if (!value || typeof value !== "object") return null;
   const s = value as { [K in keyof Shipping]?: unknown };
   const clean = (key: keyof Shipping, max: number, optional = false) => {
@@ -49,6 +74,23 @@ export function parseShipping(value: unknown): Shipping | null {
   };
   const email = clean("email", 254, true);
   if (email === null || (email && !validEmail(email))) return null;
+  const event = typeof s.method === "string" ? pickupEvent(s.method) : undefined;
+  if (event) {
+    const name = clean("name", 100);
+    if (!name || !email || now >= Date.parse(event.closesAt)) return null;
+    // Pickup tax follows the event location, never a client-supplied province.
+    return {
+      name,
+      email,
+      method: s.method as Shipping["method"],
+      country: "CA",
+      province: event.province,
+      address: "",
+      apartment: "",
+      city: "",
+      postalCode: "",
+    };
+  }
   const name = clean("name", 100),
     address = clean("address", 200),
     apartment = clean("apartment", 100, true),
@@ -97,8 +139,9 @@ export function parseShipping(value: unknown): Shipping | null {
   };
 }
 export function shippingOrderFields(s: Shipping) {
+  const event = pickupEvent(s.method);
   const method = SHIPPING_METHODS[s.method],
-    rate = PROVINCES[s.province][1];
+    rate = PROVINCES[event?.province ?? s.province][1];
   return {
     pricing_options: { auto_apply_taxes: false, auto_apply_discounts: false },
     taxes: [
@@ -113,35 +156,50 @@ export function shippingOrderFields(s: Shipping) {
         scope: "LINE_ITEM",
       },
     ],
-    line_items: [
-      {
-        uid: "shipping",
-        name: method.name,
-        quantity: "1",
-        base_price_money: { amount: method.amount, currency: "CAD" },
-      },
-    ],
+    line_items: event
+      ? []
+      : [
+          {
+            uid: "shipping",
+            name: method.name,
+            quantity: "1",
+            base_price_money: { amount: method.amount, currency: "CAD" },
+          },
+        ],
     fulfillments: [
-      {
-        uid: "shipment",
-        type: "SHIPMENT",
-        state: "PROPOSED",
-        shipment_details: {
-          shipping_type: method.name,
-          recipient: {
-            display_name: s.name,
-            ...(s.email ? { email_address: s.email } : {}),
-            address: {
-              address_line_1: s.address,
-              address_line_2: s.apartment,
-              locality: s.city,
-              administrative_district_level_1: s.province,
-              postal_code: s.postalCode,
-              country: "CA",
+      event
+        ? {
+            uid: s.method,
+            type: "PICKUP",
+            state: "PROPOSED",
+            pickup_details: {
+              recipient: { display_name: s.name, ...(s.email ? { email_address: s.email } : {}) },
+              schedule_type: "SCHEDULED",
+              pickup_at: event.pickupAt,
+              pickup_window_duration: event.duration,
+              note: `${event.name}. Pickup during event hours at the No Doubts vendor booth. ${PICKUP_INSTRUCTIONS}`,
+            },
+          }
+        : {
+            uid: "shipment",
+            type: "SHIPMENT",
+            state: "PROPOSED",
+            shipment_details: {
+              shipping_type: method.name,
+              recipient: {
+                display_name: s.name,
+                ...(s.email ? { email_address: s.email } : {}),
+                address: {
+                  address_line_1: s.address,
+                  address_line_2: s.apartment,
+                  locality: s.city,
+                  administrative_district_level_1: s.province,
+                  postal_code: s.postalCode,
+                  country: "CA",
+                },
+              },
             },
           },
-        },
-      },
     ],
   };
 }
@@ -173,6 +231,12 @@ export function hasExpectedShipping(
     }[];
     fulfillments?: {
       type?: string;
+      pickup_details?: {
+        schedule_type?: string;
+        pickup_at?: string;
+        pickup_window_duration?: string;
+        note?: string;
+      };
       shipment_details?: {
         shipping_type?: string;
         recipient?: { display_name?: string; address?: Record<string, unknown> };
@@ -180,7 +244,8 @@ export function hasExpectedShipping(
     }[];
   };
   const tax = expected.taxes[0]!,
-    charge = expected.line_items.find((line) => line.uid === "shipping")!;
+    charge = expected.line_items.find((line) => line.uid === "shipping");
+  const pickup = expected.fulfillments[0]?.pickup_details;
   const shippingLines = actual.line_items?.filter((line) => line.uid === "shipping") ?? [];
   const merchandiseLines = actual.line_items?.filter((line) => line.uid !== "shipping") ?? [];
   const actualCharge = shippingLines[0];
@@ -199,28 +264,47 @@ export function hasExpectedShipping(
           (money) => money?.amount !== 0 || money.currency !== "CAD",
         ),
     ) ||
-    shippingLines.length !== 1 ||
-    actualCharge?.quantity !== "1" ||
-    actualCharge.catalog_object_id !== undefined ||
-    actualCharge?.name !== charge.name ||
-    actualCharge.base_price_money?.amount !== charge.base_price_money.amount ||
-    actualCharge.base_price_money.currency !== "CAD" ||
-    (actualCharge.applied_taxes?.length ?? 0) !== 0 ||
-    actualCharge.total_tax_money?.amount !== 0 ||
-    actualCharge.total_tax_money.currency !== "CAD" ||
+    (pickup
+      ? shippingLines.length !== 0
+      : shippingLines.length !== 1 ||
+        !charge ||
+        actualCharge?.quantity !== "1" ||
+        actualCharge.catalog_object_id !== undefined ||
+        actualCharge?.name !== charge.name ||
+        actualCharge.base_price_money?.amount !== charge.base_price_money.amount ||
+        actualCharge.base_price_money.currency !== "CAD" ||
+        (actualCharge.applied_taxes?.length ?? 0) !== 0 ||
+        actualCharge.total_tax_money?.amount !== 0 ||
+        actualCharge.total_tax_money.currency !== "CAD") ||
     merchandiseLines.length === 0 ||
     merchandiseLines.some(
       (line) =>
-        line.applied_taxes?.length !== 1 || line.applied_taxes[0]?.tax_uid !== "destination-tax",
+        !line.catalog_object_id ||
+        line.applied_taxes?.length !== 1 ||
+        line.applied_taxes[0]?.tax_uid !== "destination-tax",
     ) ||
-    actual.fulfillments?.length !== 1 ||
+    actual.fulfillments?.length !== 1
+  )
+    return false;
+  if (pickup) {
+    const details = actual.fulfillments[0]?.pickup_details;
+    return (
+      actual.fulfillments[0]?.type === "PICKUP" &&
+      !!details &&
+      details.schedule_type === pickup.schedule_type &&
+      Date.parse(details.pickup_at ?? "") === Date.parse(pickup.pickup_at) &&
+      details.pickup_window_duration === pickup.pickup_window_duration &&
+      details.note === pickup.note
+    );
+  }
+  if (
     actual.fulfillments[0]?.type !== "SHIPMENT" ||
     actual.fulfillments[0]?.shipment_details?.shipping_type !==
-      expected.fulfillments[0]!.shipment_details.shipping_type
+      expected.fulfillments[0]!.shipment_details!.shipping_type
   )
     return false;
   const recipient = actual.fulfillments[0].shipment_details?.recipient;
-  const wanted = expected.fulfillments[0]!.shipment_details.recipient;
+  const wanted = expected.fulfillments[0]!.shipment_details!.recipient;
   const normalize = (v: unknown) =>
     typeof v === "string" ? v.trim().replace(/\s+/g, " ").toUpperCase() : "";
   // Square allows contact-name edits; the charged destination must stay fixed.

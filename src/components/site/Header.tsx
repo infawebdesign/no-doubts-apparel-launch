@@ -1,7 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { prepareCheckout } from "@/lib/checkout-attempt";
-import { validEmail, parseShipping, PROVINCES, SHIPPING_METHODS } from "@/lib/shipping";
+import {
+  validEmail,
+  parseShipping,
+  PROVINCES,
+  SHIPPING_METHODS,
+  pickupEvent,
+} from "@/lib/shipping";
 import { ShippingFields, emptyShipping, type ShippingDraft } from "./ShippingFields";
 import { squareCheckoutUrl } from "@/lib/payment-contract";
 import { Menu, X, ShoppingBag, Minus, Plus, Trash2 } from "lucide-react";
@@ -121,6 +127,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
   }, [open, refreshPrices]);
 
   const subtotal = lines.reduce((sum, line) => sum + (line.priceAmount ?? 0) * line.quantity, 0);
+  const event = pickupEvent(shipping.method);
+  const province = event?.province ?? shipping.province;
 
   const canCheckout =
     !submitting &&
@@ -140,14 +148,16 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
     const destination = parseShipping(shipping);
     if (!destination || !validEmail(destination.email)) {
       setError(
-        "Please enter your email and Canadian shipping address. Check that the postal code matches the province.",
+        event
+          ? "Please enter your name and email, and choose a pickup event that has not ended."
+          : "Please enter your email and Canadian shipping address. Check that the postal code matches the province.",
       );
       return;
     }
     checkoutBusy.current = true;
     if (!reviewed) {
       checkoutBusy.current = false;
-      setError("Please review and confirm your delivery address below.");
+      setError("Please review and confirm your delivery details below.");
       return;
     }
     setError(null);
@@ -346,18 +356,30 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
               />
               {parseShipping(shipping) && (
                 <div className="mt-4 space-y-2 border border-border p-3 text-sm">
-                  <p className="font-semibold">Review your delivery address</p>
+                  <p className="font-semibold">
+                    {event ? "Review your pickup event" : "Review your delivery address"}
+                  </p>
                   <p>
                     {shipping.name}
                     <br />
                     {shipping.email}
                     <br />
-                    {shipping.address}
-                    {shipping.apartment && `, ${shipping.apartment}`}
-                    <br />
-                    {shipping.city}, {shipping.province} {shipping.postalCode}
-                    <br />
-                    Canada
+                    {event ? (
+                      <>
+                        {event.name}
+                        <br />
+                        No Doubts vendor booth, during event hours
+                      </>
+                    ) : (
+                      <>
+                        {shipping.address}
+                        {shipping.apartment && `, ${shipping.apartment}`}
+                        <br />
+                        {shipping.city}, {shipping.province} {shipping.postalCode}
+                        <br />
+                        Canada
+                      </>
+                    )}
                   </p>
                   <label className="flex items-start gap-2">
                     <input
@@ -367,11 +389,16 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                       disabled={submitting}
                       onChange={(event) => setReviewed(event.target.checked)}
                     />
-                    <span>I checked this address and confirm it is correct.</span>
+                    <span>
+                      {event
+                        ? "I confirm this pickup event and will collect my order at the No Doubts vendor booth."
+                        : "I checked this address and confirm it is correct."}
+                    </span>
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Square and digital wallets include shipping in the order subtotal. Shipping is
-                    tax-inclusive; GST/HST is added only to merchandise.
+                    {event
+                      ? "Pickup is free. Ontario HST is added only to merchandise."
+                      : "Square and digital wallets include shipping in the order subtotal. Shipping is tax-inclusive; GST/HST is added only to merchandise."}
                   </p>
                 </div>
               )}
@@ -387,18 +414,18 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
           {lines.length > 0 && (
             <div className="space-y-1 pb-3 text-sm text-bone">
               <div className="flex justify-between">
-                <span>Shipping</span>
+                <span>{event ? "Event pickup" : "Shipping"}</span>
                 <span>{formatPrice(SHIPPING_METHODS[shipping.method].amount)}</span>
               </div>
-              {shipping.province && (
+              {province && (
                 <>
                   <div className="flex justify-between">
                     <span>
-                      {PROVINCES[shipping.province][1] === 5 ? "GST" : "HST"} (
-                      {PROVINCES[shipping.province][1]}%, merchandise only)
+                      {PROVINCES[province][1] === 5 ? "GST" : "HST"} ({PROVINCES[province][1]}%,
+                      merchandise only)
                     </span>
                     <span>
-                      {formatPrice(Math.round((subtotal * PROVINCES[shipping.province][1]) / 100))}
+                      {formatPrice(Math.round((subtotal * PROVINCES[province][1]) / 100))}
                     </span>
                   </div>
                   <div className="flex justify-between font-semibold">
@@ -407,7 +434,7 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                       {formatPrice(
                         subtotal +
                           SHIPPING_METHODS[shipping.method].amount +
-                          Math.round((subtotal * PROVINCES[shipping.province][1]) / 100),
+                          Math.round((subtotal * PROVINCES[province][1]) / 100),
                       )}
                     </span>
                   </div>
@@ -435,8 +462,9 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
                 : `Checkout ${count > 0 ? `(${count})` : ""}`}
           </button>
           <p className="mt-2 text-center text-[10px] text-muted-foreground">
-            Canada-only shipping. Regular Parcel $15 / Xpresspost $20. Orders typically process
-            within 1–2 business days. Taxes calculated at checkout.
+            {event
+              ? "Collect your order at your selected event. No shipping fee."
+              : "Canada-only shipping. Regular Parcel $15 / Xpresspost $20. Orders typically process within 1–2 business days. Taxes calculated at checkout."}
           </p>
         </SheetFooter>
       </SheetContent>
