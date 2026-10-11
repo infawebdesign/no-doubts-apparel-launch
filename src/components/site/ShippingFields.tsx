@@ -40,25 +40,38 @@ export function ShippingFields({
   return (
     <fieldset disabled={disabled} className="mt-6 space-y-3 border-t border-border pt-4">
       <legend className="display pt-4 text-lg text-bone">Shipping or event pickup</legend>
-      <label className="block text-sm text-bone">
-        Delivery option
-        <select
-          className={style}
-          value={value.method}
-          onChange={(e) => onChange({ ...value, method: e.target.value as Shipping["method"] })}
-        >
-          {Object.entries(SHIPPING_METHODS).map(([code, method]) => {
-            const pickup = pickupEvent(code);
-            const expired = pickup && Date.now() >= Date.parse(pickup.closesAt);
-            return (
-              <option key={code} value={code} disabled={!!expired}>
-                {method.name} — {method.amount === 0 ? "Free" : `$${method.amount / 100}`}
+      <fieldset className="space-y-2 text-sm text-bone">
+        <legend className="mb-2">Delivery option — choose one</legend>
+        {Object.entries(SHIPPING_METHODS).map(([code, method]) => {
+          const pickup = pickupEvent(code);
+          const expired = pickup && Date.now() >= Date.parse(pickup.closesAt);
+          return (
+            <label
+              key={code}
+              className={`flex items-start gap-3 border p-3 ${
+                value.method === code ? "border-bone bg-bone/5" : "border-border"
+              } ${disabled || expired ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+            >
+              <input
+                type="radio"
+                name="delivery-method"
+                value={code}
+                checked={value.method === code}
+                disabled={!!expired}
+                onChange={() => onChange({ ...value, method: code as Shipping["method"] })}
+                className="mt-0.5 size-4 shrink-0 accent-bone"
+              />
+              <span className="min-w-0 flex-1">
+                {method.name}
                 {expired ? " (Ended)" : ""}
-              </option>
-            );
-          })}
-        </select>
-      </label>
+              </span>
+              <span className="shrink-0 font-semibold">
+                {method.amount === 0 ? "Free" : `$${method.amount / 100}`}
+              </span>
+            </label>
+          );
+        })}
+      </fieldset>
       <p className="text-xs text-muted-foreground">
         {event
           ? PICKUP_INSTRUCTIONS
