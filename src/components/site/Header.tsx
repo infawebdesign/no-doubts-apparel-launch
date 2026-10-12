@@ -28,15 +28,15 @@ export function Header() {
   const { count } = useCart();
 
   return (
-    <header className="absolute inset-x-0 top-0 z-50">
-      <div className="mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-5 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:justify-normal sm:px-8">
+    <header className="sticky top-0 z-50 h-20 shrink-0 border-b border-border bg-ink text-bone">
+      <div className="mx-auto flex h-full max-w-[1700px] items-center justify-between gap-4 px-4 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:justify-normal sm:px-8">
         <Link to="/" className="display shrink-0 text-2xl tracking-tight sm:text-3xl">
           <img
             src="/campaign/no-doubts-logo.png"
             alt="No Doubts — home"
             width={1441}
             height={260}
-            className="h-auto w-36 sm:w-44"
+            className="h-8 w-36 object-contain sm:w-44"
           />
         </Link>
 
@@ -77,7 +77,7 @@ export function Header() {
       </div>
 
       {open && (
-        <nav className="flex flex-col border-t border-border bg-ink/95 backdrop-blur md:hidden">
+        <nav className="absolute inset-x-0 top-full flex flex-col border-t border-border bg-ink md:hidden">
           {nav.map((item) => (
             <Link
               key={item.to}

@@ -127,3 +127,31 @@
     transparent
   );
 }
+
+/* Explicit radio rendering keeps the selected dot legible on mobile browsers. */
+.delivery-radio {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 1px solid var(--bone);
+  border-radius: 50%;
+  background-color: var(--ink);
+}
+
+.delivery-radio:checked {
+  background-color: var(--bone);
+  box-shadow: inset 0 0 0 4px var(--ink);
+}
+
+.delivery-radio:focus-visible {
+  outline: 2px solid var(--bone);
+  outline-offset: 3px;
+}
+
+@media (forced-colors: active) {
+  .delivery-radio {
+    -webkit-appearance: radio;
+    appearance: auto;
+  }
+}

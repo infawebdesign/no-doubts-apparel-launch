@@ -48,8 +48,8 @@ export function ShippingFields({
           return (
             <label
               key={code}
-              className={`flex items-start gap-3 border p-3 ${
-                value.method === code ? "border-bone bg-bone/5" : "border-border"
+              className={`flex items-start gap-3 border p-3 text-bone ${
+                value.method === code ? "border-bone bg-smoke" : "border-border bg-ink"
               } ${disabled || expired ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
             >
               <input
@@ -59,7 +59,7 @@ export function ShippingFields({
                 checked={value.method === code}
                 disabled={!!expired}
                 onChange={() => onChange({ ...value, method: code as Shipping["method"] })}
-                className="mt-0.5 size-4 shrink-0 accent-bone"
+                className="delivery-radio mt-0.5 shrink-0"
               />
               <span className="min-w-0 flex-1">
                 {method.name}
