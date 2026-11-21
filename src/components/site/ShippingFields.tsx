@@ -39,12 +39,13 @@ export function ShippingFields({
   ] as const;
   return (
     <fieldset disabled={disabled} className="mt-6 space-y-3 border-t border-border pt-4">
-      <legend className="display pt-4 text-lg text-bone">Shipping or event pickup</legend>
+      <legend className="display pt-4 text-lg text-bone">Shipping within Canada</legend>
       <fieldset className="space-y-2 text-sm text-bone">
         <legend className="mb-2">Delivery option — choose one</legend>
         {Object.entries(SHIPPING_METHODS).map(([code, method]) => {
           const pickup = pickupEvent(code);
           const expired = pickup && Date.now() >= Date.parse(pickup.closesAt);
+          if (expired) return null;
           return (
             <label
               key={code}
