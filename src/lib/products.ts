@@ -27,11 +27,117 @@ export type Product = {
   priceCents: number;
   /** Static fallback size run used only when the live Square catalog is unreachable. */
   sizes: string[];
+  details?: string;
+  colors?: { name: string; squareName: string; images: ProductImage[] }[];
 };
 
 export const FALLBACK_SIZES = ["XS", "S", "M", "L", "XL", "2XL"];
 
 export const products: Product[] = [
+  {
+    id: "nd-oversized-strike",
+    slug: "oversized-strike-tee",
+    name: "Oversized Strike Tee",
+    squareName: "Heavy Strike Black",
+    tagline: "Oversized fit / black and white",
+    colorKey: "cobalt",
+    status: "available",
+    priceCents: 3500,
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    description:
+      "One of our best-selling designs, now in an oversized 100% cotton tee, and multiple color ways.",
+    details:
+      "100% cotton. Oversized fit. Available in black and white. See the oversized tee size guide for measurements.",
+    coverImage: {
+      url: "/campaign/oversized-black-tee.webp",
+      alt: "Oversized Strike Tee in black, front and back views",
+    },
+    images: [
+      {
+        url: "/campaign/oversized-black-tee.webp",
+        alt: "Oversized Strike Tee in black, front and back views",
+      },
+      {
+        url: "/campaign/oversized-black-tee-2.webp",
+        alt: "Black oversized Strike tees worn in the gym",
+      },
+      {
+        url: "/campaign/oversized-100-cotton-tee-size-chart.webp",
+        alt: "Oversized 100% cotton tee size guide",
+        sizeGuide: true,
+      },
+    ],
+    colors: [
+      {
+        name: "Black",
+        squareName: "Heavy Strike Black",
+        images: [
+          {
+            url: "/campaign/oversized-black-tee.webp",
+            alt: "Oversized Strike Tee in black, front and back views",
+          },
+          {
+            url: "/campaign/oversized-black-tee-2.webp",
+            alt: "Black oversized Strike tees worn in the gym",
+          },
+          {
+            url: "/campaign/oversized-100-cotton-tee-size-chart.webp",
+            alt: "Oversized 100% cotton tee size guide",
+            sizeGuide: true,
+          },
+        ],
+      },
+      {
+        name: "White",
+        squareName: "Heavy Strike White",
+        images: [
+          {
+            url: "/campaign/oversized-white-tee-1.webp",
+            alt: "Oversized Strike Tee in white, front and back views",
+          },
+          {
+            url: "/campaign/oversized-white-tee-2.webp",
+            alt: "White oversized Strike tees worn in the gym",
+          },
+          {
+            url: "/campaign/oversized-100-cotton-tee-size-chart.webp",
+            alt: "Oversized 100% cotton tee size guide",
+            sizeGuide: true,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "nd-varsity-hoodie",
+    slug: "varsity-hoodie",
+    name: "Varsity Hoodie",
+    squareName: "Varsity Hoodie",
+    tagline: "Varsity design / everyday comfort",
+    colorKey: "lime",
+    status: "available",
+    priceCents: 4000,
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    description:
+      "Our Varsity design in a comfy 50/50 poly/cotton blend. This hoodie is great for training and everyday wear, fitting well under coats and vests.",
+    details: "50/50 poly/cotton blend. See the hoodie size guide for measurements.",
+    coverImage: {
+      url: "/campaign/varsity-hoodie.webp",
+      alt: "Varsity Hoodie, front and sleeve views",
+    },
+    images: [
+      { url: "/campaign/varsity-hoodie.webp", alt: "Varsity Hoodie, front and sleeve views" },
+      {
+        url: "/campaign/varsity-hoodie-2.webp",
+        alt: "The team wearing Varsity hoodies in the gym",
+      },
+      {
+        url: "/campaign/hoodie-size-chart.webp",
+        alt: "Varsity Hoodie size guide",
+        sizeGuide: true,
+      },
+    ],
+  },
   {
     id: "nd-tiger",
     slug: "earn-your-total",

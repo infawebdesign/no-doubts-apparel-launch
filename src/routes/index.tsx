@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-const heroImg = "/campaign/NoDoubtTigerBlood-Single-Close-Full.webp";
+const heroImg = "/campaign/website-header.webp";
 const editorialImg = "/campaign/NoDoubtRenaissance-Group-Full.webp";
 import { useQuery } from "@tanstack/react-query";
 import { formatPrice, products } from "@/lib/products";
@@ -38,9 +38,9 @@ function Home() {
         <div className="relative min-h-[100svh]">
           <img
             src={heroImg}
-            alt="No Doubts Apparel campaign — Earn Your Total tee"
-            width={1920}
-            height={1152}
+            alt="No Doubts sticker on the sole of a shoe, held toward the blue sky"
+            width={1600}
+            height={2400}
             className="absolute inset-0 size-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-ink/40" />

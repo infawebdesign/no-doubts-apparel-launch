@@ -6,6 +6,9 @@ export const STOREFRONT_SQUARE_NAMES = [
   "Hit the Standard",
   "Varsity",
   "OG",
+  "Heavy Strike Black",
+  "Heavy Strike White",
+  "Varsity Hoodie",
 ] as const;
 export type PaymentLine = { variationId: string; quantity: number };
 

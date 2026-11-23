@@ -1,7 +1,11 @@
 import { useEffect, useRef } from "react";
 
 /** Native scrolling supports touch, trackpads and keys; page scrolling adds motion. */
-export function ScrollMarquee({ images }: { images: { url: string; alt: string }[] }) {
+export function ScrollMarquee({
+  images,
+}: {
+  images: { url: string; alt: string; landscape?: boolean }[];
+}) {
   const trackRef = useRef<HTMLDivElement>(null);
   const pauseUntil = useRef(0);
   const dragging = useRef<{ x: number; left: number; pointer: number } | null>(null);
@@ -110,7 +114,7 @@ export function ScrollMarquee({ images }: { images: { url: string; alt: string }
             loading="lazy"
             width={640}
             height={800}
-            className="aspect-[4/5] w-56 shrink-0 select-none object-cover object-top sm:w-72 lg:w-80"
+            className={`shrink-0 select-none object-cover object-top ${img.landscape ? "aspect-[3/2] w-[420px] sm:w-[540px] lg:w-[600px]" : "aspect-[4/5] w-56 sm:w-72 lg:w-80"}`}
             draggable={false}
           />
         ))}

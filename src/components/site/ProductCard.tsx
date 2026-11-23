@@ -11,10 +11,14 @@ import {
 export function ProductCard({ product }: { product: Product }) {
   const cover = product.coverImage;
   const { data, isPending, isError } = useQuery(squareCatalogQuery);
-  const squareItem = findSquareItem(data, product.squareName);
+  const squareItems = (product.colors ?? [{ squareName: product.squareName }]).map((color) =>
+    findSquareItem(data, color.squareName),
+  );
+  const squareItem = squareItems.find((item) => itemInStock(item)) ?? squareItems[0];
   // Fall back to the static price when the live catalog is unreachable.
   const price = itemPriceAmount(squareItem) ?? product.priceCents;
-  const soldOut = !isPending && !isError && !!squareItem && !itemInStock(squareItem);
+  const soldOut =
+    !isPending && !isError && squareItems.every(Boolean) && !squareItems.some(itemInStock);
 
   return (
     <Link
@@ -45,6 +49,7 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-4">
         <div className="min-w-0">
           <h3 className="display truncate text-base sm:text-lg">{product.name}</h3>
+          {product.colors && <p className="mt-1 text-xs text-muted-foreground">Black / White</p>}
         </div>
         <span className="shrink-0 text-sm font-semibold">
           {isPending ? "—" : formatPrice(price)}

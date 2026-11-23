@@ -1397,6 +1397,21 @@ test("temporary order verification failures retain a queued notification for ret
   assert.equal(sends, 1);
 });
 
+for (const [name, amount] of [["Heavy Strike Black", 3500], ["Heavy Strike White", 3500], ["Varsity Hoodie", 4000]] as const) {
+  test(`${name} uses live Square stock and can reach checkout`, async () => {
+    objects[0].item_data.name = name;
+    objects[0].item_data.variations[0].item_variation_data.price_money.amount = amount;
+    const response = await productsHandler(new Request(origin + "/api/square/products"), env);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.items[0].name, name);
+    assert.equal(body.items[0].variations[0].priceAmount, amount);
+    assert.equal(body.items[0].variations[0].availableQuantity, 3);
+    assert.equal((await checkout(undefined, [{ variationId: "variation-m", quantity: 1 }])).status, 200);
+    assert.equal((await checkout(undefined, [{ variationId: "variation-m", quantity: 4 }])).status, 409);
+  });
+}
+
 test("Square-added 3XL is listed and can reach checkout", async () => {
   const response = await productsHandler(new Request(origin + "/api/square/products"), env);
   assert.equal(response.status, 200);

@@ -158,6 +158,15 @@ function About() {
         <ScrollMarquee
           images={[
             {
+              url: "/campaign/add-to-gallery.webp",
+              landscape: true,
+              alt: "The No Doubts team wearing oversized tees and a Varsity hoodie beside a red car",
+            },
+            {
+              url: "/campaign/add-to-gallery-2.webp",
+              alt: "The No Doubts team wearing black and white oversized Strike tees and Varsity hoodies in the gym",
+            },
+            {
               url: "/campaign/NoDoubtVarsity-Single-Male-Action-Full.webp",
               alt: "Varsity Tee in action",
             },

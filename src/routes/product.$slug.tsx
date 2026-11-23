@@ -51,9 +51,12 @@ function ProductPage() {
 function ProductDetail({ product }: { product: Product }) {
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [colorIndex, setColorIndex] = useState(0);
+  const color = product.colors?.[colorIndex];
+  const images = color?.images ?? product.images;
 
   const { data, isPending } = useQuery(squareCatalogQuery);
-  const squareItem = findSquareItem(data, product.squareName);
+  const squareItem = findSquareItem(data, color?.squareName ?? product.squareName);
   const liveVariations = sortedVariations(squareItem);
   // When the live catalog is unreachable, fall back to the static size run
   // (display only — purchasing still requires live Square variation IDs).
@@ -88,19 +91,19 @@ function ProductDetail({ product }: { product: Product }) {
     addLine({
       squareItemId: squareItem.id,
       squareVariationId: selected.id,
-      name: product.name,
+      name: color ? `${product.name} — ${color.name}` : product.name,
       slug: product.slug,
       size: selected.name ?? "",
       priceAmount: selected.priceAmount,
       availableQuantity: selected.availableQuantity,
       currency: selected.currency ?? currency,
-      imageUrl: product.images[0]?.url ?? null,
-      imageAlt: product.images[0]?.alt ?? product.name,
+      imageUrl: images[0]?.url ?? null,
+      imageAlt: images[0]?.alt ?? product.name,
     });
     setAdded(true);
   };
 
-  const image = product.images[activeImage];
+  const image = images[activeImage];
   const related = products.filter((p) => p.id !== product.id).slice(0, 3);
 
   return (
@@ -143,7 +146,7 @@ function ProductDetail({ product }: { product: Product }) {
             </a>
           )}
           <div className="grid grid-cols-5 gap-3">
-            {product.images.map((img, i) => (
+            {images.map((img, i) => (
               <button
                 key={i}
                 type="button"
@@ -179,6 +182,30 @@ function ProductDetail({ product }: { product: Product }) {
           <p className="label mt-1 text-muted-foreground">
             All sizes same price + applicable GST/HST
           </p>
+
+          {product.colors && (
+            <fieldset className="mt-8">
+              <legend className="label text-muted-foreground">Select color</legend>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {product.colors.map((option, index) => (
+                  <button
+                    key={option.squareName}
+                    type="button"
+                    aria-pressed={index === colorIndex}
+                    onClick={() => {
+                      setColorIndex(index);
+                      setSelectedSize(null);
+                      setActiveImage(0);
+                      setAdded(false);
+                    }}
+                    className={`border px-4 py-3 text-sm font-semibold ${index === colorIndex ? "border-bone bg-bone text-ink" : "border-border hover:border-bone"}`}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           <div className="mt-8">
             <p className="label text-muted-foreground">Select size</p>
@@ -250,7 +277,8 @@ function ProductDetail({ product }: { product: Product }) {
             <div>
               <h2 className="label text-bone">Details</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                60/40 blend. Unisex sizing. Select from the sizes shown above.
+                {product.details ??
+                  "60/40 blend. Unisex sizing. Select from the sizes shown above."}
               </p>
             </div>
             <div>
