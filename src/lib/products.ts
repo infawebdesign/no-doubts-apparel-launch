@@ -49,8 +49,8 @@ export const products: Product[] = [
     details:
       "100% cotton. Oversized fit. Available in black and white. See the oversized tee size guide for measurements.",
     coverImage: {
-      url: "/campaign/oversized-black-tee.webp",
-      alt: "Oversized Strike Tee in black, front and back views",
+      url: "/campaign/oversized-white-tee-1.webp",
+      alt: "Oversized Strike Tee in white, front and back views",
     },
     images: [
       {

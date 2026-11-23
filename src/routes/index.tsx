@@ -124,7 +124,7 @@ function Home() {
           />
           <div className="flex flex-col justify-center gap-6 px-4 py-16 sm:px-12">
             <h2 className="display text-4xl sm:text-6xl">
-              You’re Capable of More than You Realize
+              You’re capable of more than you think
             </h2>
             <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
               No Doubts Apparel was founded by Sarah and Francesco Catalano, powerlifters and meet
